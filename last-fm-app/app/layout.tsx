@@ -1,0 +1,46 @@
+import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
+
+import { AuthProvider } from "@/components/providers/session-provider";
+import { auth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+
+import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "next.fm",
+  description:
+    "A music-first social experience powered by your Last.fm listening history.",
+};
+
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await auth();
+
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          inter.variable,
+          jetBrainsMono.variable,
+        )}
+      >
+        <AuthProvider session={session}>{children}</AuthProvider>
+      </body>
+    </html>
+  );
+}
