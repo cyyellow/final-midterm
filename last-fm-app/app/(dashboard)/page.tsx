@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ListeningHistoryList } from "@/components/history-list";
 import { NowPlayingCard } from "@/components/now-playing-card";
 import { WeeklyTopArtists } from "@/components/top-artists";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import {
   getNowPlaying,
   getRecentTracks,
@@ -13,7 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await getAuthSession();
 
   if (!session?.user) {
     redirect("/signin");

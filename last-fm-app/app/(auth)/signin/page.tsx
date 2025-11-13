@@ -3,10 +3,10 @@ import { redirect } from "next/navigation";
 
 import { SignInButton } from "@/components/sign-in-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 
 export default async function SignInPage() {
-  const session = await auth();
+  const session = await getAuthSession();
 
   if (session?.user?.username) {
     redirect("/");

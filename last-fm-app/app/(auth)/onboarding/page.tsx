@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { OnboardingForm } from "@/components/onboarding-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 
 function createSuggestedUsername(lastfmUsername: string | null) {
   const base =
@@ -12,7 +12,7 @@ function createSuggestedUsername(lastfmUsername: string | null) {
 }
 
 export default async function OnboardingPage() {
-  const session = await auth();
+  const session = await getAuthSession();
 
   if (!session?.user) {
     redirect("/signin");

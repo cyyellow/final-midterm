@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { AuthProvider } from "@/components/providers/session-provider";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
@@ -28,7 +28,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const session = await getAuthSession();
 
   return (
     <html lang="en" suppressHydrationWarning>

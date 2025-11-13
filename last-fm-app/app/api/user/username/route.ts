@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { setUsernameForUser } from "@/lib/users";
 
 const schema = z.object({
@@ -14,7 +14,7 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await getAuthSession();
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

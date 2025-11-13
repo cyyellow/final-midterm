@@ -1,5 +1,5 @@
-import NextAuth from "next-auth";
-import type { NextAuthConfig } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
+import { getServerSession } from "next-auth";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import { ObjectId } from "mongodb";
 
@@ -63,7 +63,7 @@ const lastfmProvider = {
   }),
 };
 
-export const authConfig = {
+export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise, {
     databaseName: process.env.MONGODB_DB,
   }),
@@ -88,6 +88,30 @@ export const authConfig = {
         // @ts-expect-error custom field
         token.lastfmUsername = user.lastfmUsername ?? token.lastfmUsername;
       }
+
+      if (token.sub) {
+        const client = await clientPromise;
+        const db = client.db(process.env.MONGODB_DB);
+        const lookupQuery = ObjectId.isValid(token.sub)
+          ? { _id: new ObjectId(token.sub) }
+          : { id: token.sub };
+
+        const userDoc = await db
+          .collection("users")
+          .findOne<{ username?: string; lastfmUsername?: string; image?: string }>(
+            lookupQuery,
+            { projection: { username: 1, lastfmUsername: 1, image: 1 } },
+          );
+
+        token.username = userDoc?.username ?? null;
+        if (!token.lastfmUsername && userDoc?.lastfmUsername) {
+          token.lastfmUsername = userDoc.lastfmUsername;
+        }
+        if (!token.picture && userDoc?.image) {
+          token.picture = userDoc.image;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -95,26 +119,15 @@ export const authConfig = {
         return session;
       }
 
-      const client = await clientPromise;
-      const db = client.db(process.env.MONGODB_DB);
-      const lookupQuery = ObjectId.isValid(token.sub)
-        ? { _id: new ObjectId(token.sub) }
-        : { id: token.sub };
-
-      const userDoc = await db
-        .collection("users")
-        .findOne<{ username?: string; lastfmUsername?: string; image?: string }>(
-          lookupQuery,
-        );
-
       session.user.id = token.sub;
-      session.user.image = userDoc?.image ?? session.user.image ?? null;
-      session.user.username = userDoc?.username ?? null;
+      session.user.image =
+        (typeof token.picture === "string" ? token.picture : null) ??
+        session.user.image ??
+        null;
+      session.user.username =
+        typeof token.username === "string" ? token.username : null;
       session.user.lastfmUsername =
-        userDoc?.lastfmUsername ??
-        (typeof token.lastfmUsername === "string"
-          ? token.lastfmUsername
-          : null);
+        typeof token.lastfmUsername === "string" ? token.lastfmUsername : null;
 
       return session;
     },
@@ -141,7 +154,8 @@ export const authConfig = {
       );
     },
   },
-} satisfies NextAuthConfig;
+};
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
-
+export function getAuthSession() {
+  return getServerSession(authOptions);
+}

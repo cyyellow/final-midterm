@@ -2,14 +2,14 @@ import { Logo } from "@/components/logo";
 import { LeftNav } from "@/components/left-nav";
 import { RightStatus } from "@/components/right-status";
 import { getFriendStatuses } from "@/lib/friends";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const session = await getAuthSession();
   const statuses = session?.user?.id
     ? await getFriendStatuses(session.user.id)
     : [];

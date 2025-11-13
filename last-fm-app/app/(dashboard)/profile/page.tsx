@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { getUserById } from "@/lib/users";
 
 export default async function ProfilePage() {
-  const session = await auth();
+  const session = await getAuthSession();
 
   if (!session?.user) {
     redirect("/signin");
