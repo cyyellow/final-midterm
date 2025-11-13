@@ -190,3 +190,8 @@ export async function getUserInfo(sessionKey: string) {
   return data.user;
 }
 
+export async function getAuthToken(token: string) {
+  const session = await requestSession(token);
+  return session.key;
+}
+

@@ -63,6 +63,7 @@ NEXTAUTH_URL=http://localhost:3000        # your local dev URL or deployed domai
 NEXTAUTH_SECRET=replace-with-strong-secret # generate via `openssl rand -base64 32`
 LASTFM_API_KEY=your-lastfm-api-key         # from Last.fm dashboard
 LASTFM_API_SECRET=your-lastfm-api-secret   # from Last.fm dashboard
+NEXTAUTH_DEBUG=true                        # optional: verbose auth logs in development
 MONGODB_URI=mongodb+srv://...              # MongoDB connection string
 MONGODB_DB=nextfm                          # Optional: override database name
 ```

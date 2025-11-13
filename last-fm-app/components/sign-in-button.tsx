@@ -15,7 +15,7 @@ export function SignInButton({ label = "Sign in with Last.fm" }: SignInButtonPro
 
   const handleClick = () => {
     startTransition(async () => {
-      await signIn("lastfm");
+      await signIn("lastfm", { callbackUrl: "/" });
     });
   };
 
