@@ -27,11 +27,14 @@ This project is configured for deployment on Vercel and uses MongoDB for persist
 
 - 🔐 Last.fm authentication with a 1-month session
 - 🪪 Anonymous username onboarding flow
-- 🎧 Real-time “Now Playing” card powered by Last.fm
-- 📻 Scrollable listening history pulled from scrobbles
+- 🎧 Real-time "Now Playing" card powered by Last.fm with inline posting
+- 📻 Scrollable listening history with quick "record" buttons
 - 📈 Weekly top artist chart
 - 👥 Friend sidebar that mirrors Discord-style presence (based on follow graph)
-- 🧱 Responsive sidebar layout ready for future modules (society, events, posts)
+- 🎵 Music-based social feed with track sharing and thoughts (200 char limit)
+- 💿 Retro-style profile page with weekly track grids
+- ✨ Floating post creation dialog with track selection
+- 🧱 Responsive sidebar layout ready for future modules (society, events)
 
 ## Getting Started
 
@@ -83,18 +86,32 @@ Visit [http://localhost:3000](http://localhost:3000) to sign in with Last.fm and
 ```
 app/
   (auth)/                 → Auth-only routes (`/signin`, `/onboarding`)
-  (dashboard)/            → Authenticated experience, including `/`, `/profile`, `/society`, `/events`, `/posts/create`
-  api/                    → Route handlers (NextAuth, username onboarding)
+  (dashboard)/            → Authenticated experience, including `/`, `/profile`, `/society`, `/events`
+  api/
+    auth/                 → NextAuth route handlers
+    posts/                → Post creation API
+    lastfm/               → Last.fm data fetching endpoints
+    user/                 → User management endpoints
 components/
-  ui/                     → shadcn/ui components
-  ...                     → Feature-specific building blocks
+  ui/                     → shadcn/ui components (button, card, dialog, etc.)
+  create-post-button.tsx  → Main post creation trigger
+  create-post-dialog.tsx  → Post composition modal
+  inline-post-form.tsx    → Quick post form for now playing
+  track-selector-dialog.tsx → Track picker for posts
+  track-grid.tsx          → Retro-style weekly track display
+  post-detail-dialog.tsx  → Full post view modal
+  right-sidebar-content.tsx → Music activity sidebar
+  ...                     → Other feature components
 lib/
-  auth.ts                 → NextAuth configuration
+  auth.ts                 → NextAuth configuration with Last.fm OAuth
   lastfm.ts               → Last.fm API helpers
+  posts.ts                → Post CRUD operations
   friends.ts              → Friend/follow utilities
   mongodb.ts              → MongoDB connection helper
   users.ts                → User persistence helpers
-types/                    → TypeScript module augmentation (NextAuth)
+types/
+  next-auth.d.ts          → NextAuth type extensions
+  post.ts                 → Post data models
 ```
 
 ## Available Scripts
@@ -113,12 +130,39 @@ types/                    → TypeScript module augmentation (NextAuth)
 
 MongoDB Atlas is an easy drop-in choice—allow access from Vercel’s IP ranges or enable `0.0.0.0/0` (with caution) while you test.
 
+## How It Works
+
+### Music Sharing System
+
+The app features a retro-inspired music sharing system:
+
+1. **Creating Posts**: Click the "Record a Moment" button in the left sidebar to select a track from your listening history and share your thoughts (up to 200 characters).
+
+2. **Quick Posting**: When you're listening to something, use the inline form below the "Now Playing" card to instantly share your current vibe.
+
+3. **Track Selection**: Each track in your recent history has a hidden record button (🎵) that appears on hover, letting you quickly create a post.
+
+4. **Music Feed**: The home page displays a chronological feed of music moments from all users, showing the track artwork, details, and thoughts.
+
+5. **Profile View**: Your profile organizes posts into weekly grids with a retro aesthetic. Click any album cover to view the full post with your thoughts.
+
+### Database Schema
+
+The app stores data in MongoDB with the following collections:
+
+- **users**: User profiles with Last.fm username mapping and site username
+- **sessions**: NextAuth session management (1-month expiry)
+- **accounts**: OAuth account linking
+- **posts**: Music sharing posts with track metadata and user thoughts
+
 ## Roadmap Ideas
 
-- Rich post composer with album artwork previews
-- Reactions and comments on listening history
-- Live event rooms with synchronized playback
-- Daily/weekly listening stories and badges
+- ❤️ Reactions and comments on posts
+- 🎯 Collaborative playlists and music recommendations
+- 🏆 Listening challenges and achievements
+- 🎪 Live event rooms with synchronized playback
+- 📊 Advanced listening statistics and insights
+- 🔔 Follow system with activity notifications
 
 ---
 

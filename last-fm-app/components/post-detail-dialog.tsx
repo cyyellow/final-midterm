@@ -1,0 +1,88 @@
+"use client";
+
+import Image from "next/image";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { Post } from "@/types/post";
+
+interface PostDetailDialogProps {
+  post: Post | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogProps) {
+  if (!post) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarImage src={post.userImage} />
+              <AvatarFallback>{post.username[0]?.toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold">{post.username}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(post.createdAt).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Track Info */}
+          <div className="flex gap-4 rounded-lg border bg-muted/30 p-4">
+            {post.track.image && (
+              <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-md shadow-md">
+                <Image
+                  src={post.track.image}
+                  alt={post.track.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div className="flex flex-col justify-center">
+              <h3 className="text-xl font-bold">{post.track.name}</h3>
+              <p className="text-lg text-muted-foreground">{post.track.artist}</p>
+              {post.track.album && (
+                <p className="mt-1 text-sm text-muted-foreground">{post.track.album}</p>
+              )}
+              {post.track.url && (
+                <a
+                  href={post.track.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 text-sm text-primary hover:underline"
+                >
+                  View on Last.fm →
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Thoughts */}
+          {post.thoughts && (
+            <div className="rounded-lg bg-muted/20 p-4">
+              <p className="whitespace-pre-wrap leading-relaxed">{post.thoughts}</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

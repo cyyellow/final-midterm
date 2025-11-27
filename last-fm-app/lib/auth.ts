@@ -37,6 +37,7 @@ export const authOptions: NextAuthOptions = {
         url: "http://www.last.fm/api/auth/",
         params: { 
           api_key: process.env.LASTFM_API_KEY,
+          cb: `${process.env.NEXTAUTH_URL}/api/auth/callback/lastfm`,
         },
       },
       token: {
