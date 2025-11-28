@@ -29,7 +29,7 @@ export async function createPost(
   };
 }
 
-export async function getPosts(limit = 50): Promise<Post[]> {
+export async function getPosts(limit = 100): Promise<Post[]> {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
@@ -43,10 +43,11 @@ export async function getPosts(limit = 50): Promise<Post[]> {
   return posts.map((post) => ({
     ...post,
     _id: post._id.toString(),
+    createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
   })) as Post[];
 }
 
-export async function getUserPosts(userId: string, limit = 50): Promise<Post[]> {
+export async function getUserPosts(userId: string, limit = 100): Promise<Post[]> {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
@@ -60,6 +61,7 @@ export async function getUserPosts(userId: string, limit = 50): Promise<Post[]> 
   return posts.map((post) => ({
     ...post,
     _id: post._id.toString(),
+    createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
   })) as Post[];
 }
 
@@ -82,4 +84,6 @@ export async function getPostById(postId: string): Promise<Post | null> {
     _id: post._id.toString(),
   } as Post;
 }
+
+
 

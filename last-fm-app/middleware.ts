@@ -1,37 +1,33 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
-const publicRoutes = ["/signin", "/api/auth", "/api/webhooks"];
+export function middleware(request: NextRequest) {
+  const { pathname, searchParams } = request.nextUrl;
 
-export async function middleware(req: NextRequest) {
-  const { nextUrl } = req;
-  
-  const isPublic = publicRoutes.some((route) =>
-    nextUrl.pathname.startsWith(route),
-  );
-
-  // Allow public routes
-  if (isPublic) {
-    return NextResponse.next();
-  }
-
-  // Check for session cookie
-  const sessionToken = req.cookies.get("next-auth.session-token")?.value;
-  
-  if (!sessionToken) {
-    const redirectUrl = new URL("/signin", nextUrl.origin);
-    if (nextUrl.pathname !== "/") {
-      redirectUrl.searchParams.set("callbackUrl", nextUrl.href);
+  // Intercept Last.fm OAuth callback
+  if (pathname === "/api/auth/callback/lastfm") {
+    // Last.fm sends 'token' but NextAuth expects 'code'
+    const lastfmToken = searchParams.get("token");
+    
+    if (lastfmToken) {
+      console.log("[middleware] Intercepted Last.fm callback with token:", lastfmToken.substring(0, 10) + "...");
+      
+      // Create a new URL with 'code' instead of 'token'
+      const url = request.nextUrl.clone();
+      url.searchParams.delete("token");
+      url.searchParams.set("code", lastfmToken);
+      
+      console.log("[middleware] Redirecting to callback with transformed parameters");
+      
+      // Redirect to the same endpoint but with the transformed parameters
+      // This causes a new request with the correct parameters for NextAuth
+      return NextResponse.redirect(url);
     }
-    return NextResponse.redirect(redirectUrl);
   }
 
-  // For onboarding and protected routes, allow through
-  // The actual session validation happens server-side in getAuthSession()
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|assets).*)"],
+  matcher: "/api/auth/callback/lastfm",
 };

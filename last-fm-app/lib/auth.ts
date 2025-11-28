@@ -33,8 +33,11 @@ export const authOptions: NextAuthOptions = {
       type: "oauth",
       clientId: process.env.LASTFM_API_KEY,
       clientSecret: process.env.LASTFM_API_SECRET,
+      // Last.fm uses a non-standard OAuth flow
+      // Disable checks since Last.fm doesn't support state/PKCE
+      checks: [],
       authorization: {
-        url: "http://www.last.fm/api/auth/",
+        url: "https://www.last.fm/api/auth/",
         params: { 
           api_key: process.env.LASTFM_API_KEY,
           cb: `${process.env.NEXTAUTH_URL}/api/auth/callback/lastfm`,
@@ -42,23 +45,36 @@ export const authOptions: NextAuthOptions = {
       },
       token: {
         async request(context) {
+          // Middleware transforms Last.fm's 'token' param to 'code' for NextAuth compatibility
           const { params } = context;
-          const token = params?.token as string | undefined;
+          
+          console.log("[lastfm-provider] Token request params:", params);
+          
+          // The middleware should have transformed 'token' to 'code'
+          const token = params?.code as string | undefined;
           
           if (!token) {
-            throw new Error("No token returned from Last.fm");
+            console.error("[lastfm-provider] No token found after middleware transformation");
+            console.error("[lastfm-provider] Available params:", JSON.stringify(params, null, 2));
+            throw new Error("No token returned from Last.fm after callback");
           }
 
-          console.log("[lastfm-provider] Exchanging token for session key");
+          console.log("[lastfm-provider] Exchanging Last.fm token for session key");
           
-          const sessionKey = await getAuthToken(token);
-          
-          return {
-            tokens: {
-              access_token: sessionKey,
-              token_type: "Bearer",
-            },
-          };
+          try {
+            const sessionKey = await getAuthToken(token);
+            console.log("[lastfm-provider] Successfully obtained session key");
+            
+            return {
+              tokens: {
+                access_token: sessionKey,
+                token_type: "Bearer",
+              },
+            };
+          } catch (error) {
+            console.error("[lastfm-provider] Failed to exchange token for session:", error);
+            throw error;
+          }
         },
       },
       userinfo: {
@@ -68,9 +84,11 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Missing session key");
           }
 
-          console.log("[lastfm-provider] Fetching user info");
+          console.log("[lastfm-provider] Fetching user info with session key");
           
           const profile = await getUserInfo(sessionKey);
+          
+          console.log("[lastfm-provider] Got user profile:", profile.name);
           
           // Return profile in NextAuth's expected format
           return {
@@ -120,21 +138,24 @@ export const authOptions: NextAuthOptions = {
           .findOne<{
             username?: string;
             lastfmUsername?: string;
+            displayName?: string;
             image?: string;
           }>(lookupQuery, {
-            projection: { username: 1, lastfmUsername: 1, image: 1 },
+            projection: { username: 1, lastfmUsername: 1, displayName: 1, image: 1 },
           });
 
         session.user.id = user.id;
         session.user.image = userDoc?.image ?? user.image ?? null;
         session.user.username = userDoc?.username ?? null;
         session.user.lastfmUsername = userDoc?.lastfmUsername ?? null;
+        session.user.displayName = userDoc?.displayName ?? null;
       } catch (error) {
         console.warn("[next-auth][session] user lookup failed", error);
         session.user.id = user.id;
         session.user.image = user.image ?? null;
         session.user.username = null;
         session.user.lastfmUsername = null;
+        session.user.displayName = null;
       }
 
       return session;

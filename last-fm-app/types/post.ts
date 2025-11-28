@@ -26,3 +26,5 @@ export interface CreatePostInput {
   thoughts: string;
 }
 
+
+

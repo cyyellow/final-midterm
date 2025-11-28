@@ -1,6 +1,9 @@
+import { redirect } from "next/navigation";
+
 import { Logo } from "@/components/logo";
 import { LeftNav } from "@/components/left-nav";
 import { RightSidebarContent } from "@/components/right-sidebar-content";
+import { ResponsiveLayoutWrapper } from "@/components/responsive-layout-wrapper";
 import { getFriendStatuses } from "@/lib/friends";
 import { getAuthSession } from "@/lib/auth";
 import { getNowPlaying, getRecentTracks } from "@/lib/lastfm";
@@ -11,6 +14,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await getAuthSession();
+  
+  // Redirect to onboarding if user is authenticated but hasn't completed onboarding
+  if (session?.user && !session.user.username) {
+    redirect("/onboarding");
+  }
+  
   const statuses = session?.user?.id
     ? await getFriendStatuses(session.user.id)
     : [];
@@ -24,20 +33,26 @@ export default async function DashboardLayout({
     : [null, []];
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="hidden h-screen w-56 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
-        <Logo className="-ml-2 mb-6" />
-        <LeftNav />
-      </aside>
-      <main className="flex min-h-screen flex-1 flex-col">{children}</main>
-      <aside className="hidden w-80 border-l border-sidebar-border bg-sidebar/60 p-4 xl:block">
-        <RightSidebarContent
-          nowPlaying={nowPlaying}
-          recentTracks={recentTracks}
-          friendStatuses={statuses}
-        />
-      </aside>
-    </div>
+    <ResponsiveLayoutWrapper
+      nowPlaying={nowPlaying}
+      recentTracks={recentTracks}
+      friendStatuses={statuses}
+    >
+      <div className="flex min-h-screen bg-background text-foreground">
+        <aside className="hidden h-screen w-56 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
+          <Logo className="-ml-2 mb-6" />
+          <LeftNav />
+        </aside>
+        <main className="flex min-h-screen flex-1 flex-col pb-20 lg:pb-0">{children}</main>
+        <aside className="hidden w-80 border-l border-sidebar-border bg-sidebar/60 p-4 xl:block">
+          <RightSidebarContent
+            nowPlaying={nowPlaying}
+            recentTracks={recentTracks}
+            friendStatuses={statuses}
+          />
+        </aside>
+      </div>
+    </ResponsiveLayoutWrapper>
   );
 }
 

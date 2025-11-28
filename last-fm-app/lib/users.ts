@@ -89,4 +89,63 @@ export async function setUsernameForUser(userId: string, username: string) {
   return result.value as WithId<AppUser> | null;
 }
 
+export async function setUsernameAndDisplayName(
+  userId: string,
+  username: string,
+  displayName: string
+) {
+  const trimmedUsername = username.trim();
+  const trimmedDisplayName = displayName.trim();
+  
+  if (trimmedUsername.length < 3) {
+    throw new Error("Username must be at least 3 characters long.");
+  }
+
+  if (trimmedDisplayName.length < 1) {
+    throw new Error("Nickname is required.");
+  }
+
+  const usernameLower = normalizeUsername(trimmedUsername);
+  const collection = await getUsersCollection();
+
+  // Check if username is already taken by another user
+  const existing = await collection.findOne({
+    usernameLower,
+    ...(ObjectId.isValid(userId)
+      ? { _id: { $ne: new ObjectId(userId) } }
+      : {
+          id: { $ne: userId },
+        }),
+  });
+
+  if (existing) {
+    throw new Error("This username is already taken.");
+  }
+
+  const filter = ObjectId.isValid(userId)
+    ? { _id: new ObjectId(userId) }
+    : { id: userId };
+
+  const result = await collection.findOneAndUpdate(
+    filter,
+    {
+      $set: {
+        username: trimmedUsername,
+        usernameLower,
+        displayName: trimmedDisplayName,
+        updatedAt: new Date(),
+      },
+      $setOnInsert: {
+        createdAt: new Date(),
+      },
+    },
+    {
+      upsert: true,
+      returnDocument: "after",
+    },
+  );
+
+  return result.value as WithId<AppUser> | null;
+}
+
 
