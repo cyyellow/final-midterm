@@ -32,31 +32,32 @@ export function TrackGrid({ posts }: TrackGridProps) {
   return (
     <>
       <div className="relative">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
           {visiblePosts.map((post) => (
             <button
               key={post._id}
               onClick={() => setSelectedPost(post)}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-muted transition-all hover:scale-105 hover:shadow-lg"
+              className="group flex flex-col gap-2 text-left transition-all hover:scale-105"
             >
-              {post.track.image ? (
-                <Image
-                  src={post.track.image}
-                  alt={post.track.name}
-                  fill
-                  className="object-cover transition-opacity group-hover:opacity-80"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                  <span className="text-4xl">🎵</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="absolute bottom-0 left-0 right-0 translate-y-full p-2 transition-transform group-hover:translate-y-0">
-                <p className="truncate text-xs font-medium text-white">
+              <div className="relative aspect-square overflow-hidden rounded-lg bg-muted shadow-md hover:shadow-lg transition-shadow">
+                {post.track.image ? (
+                  <Image
+                    src={post.track.image}
+                    alt={post.track.name}
+                    fill
+                    className="object-cover transition-opacity group-hover:opacity-80"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                    <span className="text-4xl">🎵</span>
+                  </div>
+                )}
+              </div>
+              <div className="px-1">
+                <p className="truncate text-sm font-semibold text-foreground">
                   {post.track.name}
                 </p>
-                <p className="truncate text-xs text-white/80">
+                <p className="truncate text-xs text-muted-foreground">
                   {post.track.artist}
                 </p>
               </div>

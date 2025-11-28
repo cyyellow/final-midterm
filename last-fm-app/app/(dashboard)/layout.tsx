@@ -38,13 +38,13 @@ export default async function DashboardLayout({
       recentTracks={recentTracks}
       friendStatuses={statuses}
     >
-      <div className="flex min-h-screen bg-background text-foreground">
-        <aside className="hidden h-screen w-56 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
+      <div className="flex bg-background text-foreground">
+        <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
           <Logo className="-ml-2 mb-6" />
           <LeftNav />
         </aside>
-        <main className="flex min-h-screen flex-1 flex-col pb-20 lg:pb-0">{children}</main>
-        <aside className="hidden w-80 border-l border-sidebar-border bg-sidebar/60 p-4 xl:block">
+        <main className="min-h-screen flex-1 pb-20 lg:pb-0">{children}</main>
+        <aside className="sticky top-0 hidden h-screen w-80 shrink-0 border-l border-sidebar-border bg-sidebar/60 p-4 xl:block">
           <RightSidebarContent
             nowPlaying={nowPlaying}
             recentTracks={recentTracks}

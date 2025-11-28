@@ -6,11 +6,11 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Music2, Disc } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
-import { InlinePostForm } from "./inline-post-form";
 import { CreatePostDialog } from "./create-post-dialog";
 
 interface RightSidebarContentProps {
@@ -45,103 +45,124 @@ export function RightSidebarContent({
   recentTracks,
   friendStatuses,
 }: RightSidebarContentProps) {
+  const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+
+  const handleRecordClick = (track: LastfmTrack) => {
+    setSelectedTrack(track);
+    setShowCreatePost(true);
+  };
+
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <h2 className="mb-4 text-lg font-semibold">Your Music</h2>
 
-      <ScrollArea className="flex-1">
-        <div className="space-y-4 pr-3">
-          {/* Now Playing */}
-          {nowPlaying && (
-            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-              <CardHeader className="pb-2 px-3 pt-3">
-                <div className="flex items-center gap-2">
-                  <Music2 className="h-3.5 w-3.5 animate-pulse text-primary" />
-                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-primary">
-                    Now Playing
-                  </CardTitle>
+      {/* Now Playing */}
+      {nowPlaying && (
+        <Card className="mb-4 flex-shrink-0 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardHeader className="pb-2 px-3 pt-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Music2 className="h-3.5 w-3.5 animate-pulse text-primary" />
+                <CardTitle className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Now Playing
+                </CardTitle>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => handleRecordClick(nowPlaying)}
+                title="Record a moment"
+              >
+                <Disc className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-3 pb-3">
+            <div className="flex gap-2">
+              {nowPlaying.image && nowPlaying.image.length > 0 && (
+                <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md">
+                  <Image
+                    src={
+                      nowPlaying.image.find((img) => img.size === "large")?.["#text"] ||
+                      nowPlaying.image[0]["#text"]
+                    }
+                    alt={nowPlaying.name}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-2 px-3 pb-3">
-                <div className="flex gap-2">
-                  {nowPlaying.image && nowPlaying.image.length > 0 && (
-                    <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md">
-                      <Image
-                        src={
-                          nowPlaying.image.find((img) => img.size === "large")?.["#text"] ||
-                          nowPlaying.image[0]["#text"]
-                        }
-                        alt={nowPlaying.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <h3 className="line-clamp-2 text-xs font-semibold leading-tight">{nowPlaying.name}</h3>
-                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{nowPlaying.artist["#text"]}</p>
-                    {nowPlaying.album?.["#text"] && (
-                      <p className="mt-0.5 truncate text-[10px] text-muted-foreground/70">
-                        {nowPlaying.album["#text"]}
+              )}
+              <div className="min-w-0 flex-1">
+                <h3 className="line-clamp-2 text-xs font-semibold leading-tight">{nowPlaying.name}</h3>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{nowPlaying.artist["#text"]}</p>
+                {nowPlaying.album?.["#text"] && (
+                  <p className="mt-0.5 truncate text-[10px] text-muted-foreground/70">
+                    {nowPlaying.album["#text"]}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Listening History - Scrollable */}
+      <Card className="mb-4 flex min-h-0 flex-1 flex-col">
+        <CardHeader className="flex-shrink-0 pb-2 px-3 pt-3">
+          <CardTitle className="text-xs font-semibold uppercase tracking-wide">Listening History</CardTitle>
+        </CardHeader>
+        <CardContent className="min-h-0 flex-1 px-0 pb-2">
+          <ScrollArea className="h-full px-2">
+            <div className="space-y-0.5">
+              <HistoryTracksList tracks={recentTracks.slice(0, 20)} />
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      <Separator className="mb-4" />
+
+      {/* Friend Activity - Fixed at bottom */}
+      <div className="flex-shrink-0 pb-4">
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground">Friend Activity</h3>
+        {friendStatuses.length > 0 ? (
+          <div className="space-y-3">
+            {friendStatuses.slice(0, 3).map((friend) => (
+              <div key={friend.id} className="flex items-start gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={friend.image} alt={friend.username} />
+                  <AvatarFallback>{friend.username[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{friend.username}</p>
+                  {friend.nowPlaying ? (
+                    <div className="mt-0.5">
+                      <Badge variant="secondary" className="text-xs">
+                        Listening
+                      </Badge>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {friend.nowPlaying.track} • {friend.nowPlaying.artist}
                       </p>
-                    )}
-                  </div>
-                </div>
-
-                <InlinePostForm track={nowPlaying} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Listening History */}
-          <Card>
-            <CardHeader className="pb-2 px-3 pt-3">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wide">Listening History</CardTitle>
-            </CardHeader>
-            <CardContent className="px-0 pb-2">
-              <div className="max-h-[500px] space-y-0.5 overflow-y-auto px-2">
-                <HistoryTracksList tracks={recentTracks.slice(0, 20)} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Separator />
-
-          {/* Friend Activity */}
-          <div>
-            <h3 className="mb-3 text-sm font-medium text-muted-foreground">Friend Activity</h3>
-            {friendStatuses.length > 0 ? (
-              <div className="space-y-3">
-                {friendStatuses.map((friend) => (
-                  <div key={friend.id} className="flex items-start gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={friend.image} alt={friend.username} />
-                      <AvatarFallback>{friend.username[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{friend.username}</p>
-                      {friend.nowPlaying ? (
-                        <div className="mt-0.5">
-                          <Badge variant="secondary" className="text-xs">
-                            Listening
-                          </Badge>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {friend.nowPlaying.track} • {friend.nowPlaying.artist}
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Offline</p>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Offline</p>
+                  )}
+                </div>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No friends online</p>
-            )}
+            ))}
           </div>
-        </div>
-      </ScrollArea>
+        ) : (
+          <p className="text-sm text-muted-foreground">No friends online</p>
+        )}
+      </div>
+
+      <CreatePostDialog
+        open={showCreatePost}
+        onOpenChange={setShowCreatePost}
+        track={selectedTrack}
+      />
     </div>
   );
 }
