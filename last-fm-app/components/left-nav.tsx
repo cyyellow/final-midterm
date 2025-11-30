@@ -11,6 +11,7 @@ import {
   UsersRound,
   LogOut,
   UserPlus,
+  MessageSquare,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -37,6 +38,11 @@ const navItems = [
     title: "Join Event",
     href: "/events",
     icon: CalendarClock,
+  },
+  {
+    title: "Chat",
+    href: "/chat",
+    icon: MessageSquare,
   },
 ];
 

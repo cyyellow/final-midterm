@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Calendar, MapPin, Users, MessageSquare, Send, Loader2, UserPlus, UserMinus } from "lucide-react";
 import {
   Dialog,
@@ -36,6 +37,7 @@ export function EventDetailDialog({
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -157,6 +159,28 @@ export function EventDetailDialog({
       alert("Failed to leave event");
     } finally {
       setIsLeaving(false);
+    }
+  };
+
+  const handleEndEvent = async () => {
+    if (!confirm("Are you sure you want to end this event? This action cannot be undone.")) return;
+
+    setIsEnding(true);
+    try {
+      const res = await fetch(`/api/events/${event._id}/end`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to end event");
+      }
+    } catch (error) {
+      alert("Failed to end event");
+    } finally {
+      setIsEnding(false);
     }
   };
 
@@ -307,6 +331,24 @@ export function EventDetailDialog({
                 </Button>
               )}
 
+              {currentUserId === event.creatorId && !isEnded && (
+                <Button
+                  onClick={handleEndEvent}
+                  disabled={isEnding}
+                  variant="destructive"
+                  className="w-full mb-2"
+                >
+                  {isEnding ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Ending...
+                    </>
+                  ) : (
+                    "End Event Now"
+                  )}
+                </Button>
+              )}
+
               {isParticipant && currentUserId !== event.creatorId && !isEnded && (
                 <Button
                   onClick={handleLeave}
@@ -326,6 +368,15 @@ export function EventDetailDialog({
                     </>
                   )}
                 </Button>
+              )}
+
+              {isParticipant && !isEnded && event.requiresChat && (
+                <Link href="/chat" className="w-full">
+                  <Button variant="secondary" className="w-full mt-2">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Open in Chat
+                  </Button>
+                </Link>
               )}
             </div>
           )}
