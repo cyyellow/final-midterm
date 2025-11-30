@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { getPosts } from "@/lib/posts";
 import { getTopArtists } from "@/lib/lastfm";
-import { getUserPlaylist } from "@/lib/playlist";
+import { getHomepagePlaylist } from "@/lib/playlist";
 import { TopArtistsCard } from "@/components/top-artists-card";
 import { MyPlaylistCard } from "@/components/my-playlist-card";
 import { FeedPost } from "@/components/feed-post";
@@ -21,10 +21,10 @@ export default async function DashboardPage() {
   }
 
   // Fetch data in parallel
-  const [posts, topArtists, playlist] = await Promise.all([
+  const [posts, topArtists, homepagePlaylist] = await Promise.all([
     getPosts(100, session.user.id),
     getTopArtists(session.user.lastfmUsername),
-    getUserPlaylist(session.user.id),
+    getHomepagePlaylist(session.user.id),
   ]);
 
   return (
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TopArtistsCard artists={topArtists} />
           <MyPlaylistCard 
-            initialPlaylist={playlist} 
+            initialPlaylist={homepagePlaylist} 
             username={session.user.lastfmUsername} 
           />
         </div>

@@ -7,6 +7,7 @@ import { ResponsiveLayoutWrapper } from "@/components/responsive-layout-wrapper"
 import { getFriendStatuses } from "@/lib/friends";
 import { getAuthSession } from "@/lib/auth";
 import { getNowPlaying, getRecentTracks } from "@/lib/lastfm";
+import { getUserPlaylists } from "@/lib/playlist";
 
 export default async function DashboardLayout({
   children,
@@ -22,6 +23,10 @@ export default async function DashboardLayout({
   
   const statuses = session?.user?.id
     ? await getFriendStatuses(session.user.id)
+    : [];
+
+  const playlists = session?.user?.id
+    ? await getUserPlaylists(session.user.id)
     : [];
 
   const username = session?.user?.lastfmUsername;
@@ -49,6 +54,7 @@ export default async function DashboardLayout({
             nowPlaying={nowPlaying}
             recentTracks={recentTracks}
             friendStatuses={statuses}
+            playlists={playlists}
           />
         </aside>
       </div>

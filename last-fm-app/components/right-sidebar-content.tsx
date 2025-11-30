@@ -11,7 +11,9 @@ import { Music2, Disc } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
+import type { Playlist } from "@/lib/playlist";
 import { CreatePostDialog } from "./create-post-dialog";
+import { PlaylistsWidget } from "./playlists-widget";
 
 interface RightSidebarContentProps {
   nowPlaying: LastfmTrack | null;
@@ -25,6 +27,7 @@ interface RightSidebarContentProps {
       artist: string;
     };
   }>;
+  playlists: Playlist[];
 }
 
 function getRelativeTime(uts?: string) {
@@ -44,6 +47,7 @@ export function RightSidebarContent({
   nowPlaying,
   recentTracks,
   friendStatuses,
+  playlists,
 }: RightSidebarContentProps) {
   const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -119,6 +123,11 @@ export function RightSidebarContent({
           </div>
         </CardContent>
       </Card>
+
+      {/* Playlists Widget */}
+      <div className="mb-4">
+        <PlaylistsWidget playlists={playlists} />
+      </div>
 
       <Separator className="mb-4" />
 
