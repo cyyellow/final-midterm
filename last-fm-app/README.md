@@ -69,6 +69,14 @@ LASTFM_API_SECRET=your-lastfm-api-secret   # from Last.fm dashboard
 NEXTAUTH_DEBUG=true                        # optional: verbose auth logs in development
 MONGODB_URI=mongodb+srv://...              # MongoDB connection string
 MONGODB_DB=nextfm                          # Optional: override database name
+
+# Pusher (optional, for real-time chat)
+PUSHER_APP_ID=your-pusher-app-id           # from Pusher dashboard
+PUSHER_KEY=your-pusher-key                 # from Pusher dashboard
+PUSHER_SECRET=your-pusher-secret           # from Pusher dashboard
+PUSHER_CLUSTER=ap3                         # your Pusher cluster (e.g., ap3, us2, eu)
+NEXT_PUBLIC_PUSHER_KEY=your-pusher-key     # same as PUSHER_KEY (for client-side)
+NEXT_PUBLIC_PUSHER_CLUSTER=ap3             # same as PUSHER_CLUSTER (for client-side)
 ```
 
 > **Tip:** When deploying to Vercel, set the same variables in the project’s Environment Variables tab. `NEXTAUTH_URL` should point to the production domain (e.g. `https://nextfm.vercel.app`).

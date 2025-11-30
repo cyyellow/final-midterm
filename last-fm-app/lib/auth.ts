@@ -170,6 +170,10 @@ export const authOptions: NextAuthOptions = {
           ? { _id: new ObjectId(user.id) }
           : { id: user.id };
 
+        // Generate invite code for new user
+        const { getOrCreateInviteCode } = await import("@/lib/users");
+        const inviteCode = await getOrCreateInviteCode(user.id);
+
         await db.collection("users").updateOne(
           filter,
           {
@@ -177,6 +181,7 @@ export const authOptions: NextAuthOptions = {
               createdAt: new Date(),
             },
             $set: {
+              inviteCode,
               updatedAt: new Date(),
             },
           },

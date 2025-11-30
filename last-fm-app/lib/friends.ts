@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { clientPromise } from "@/lib/mongodb";
 import { getNowPlaying } from "@/lib/lastfm";
 import type { FriendStatus } from "@/components/right-status";
+import { getUserByInviteCode } from "@/lib/users";
 
 type FollowDoc = {
   _id: ObjectId;
@@ -86,5 +87,124 @@ export async function getFriendStatuses(userId: string): Promise<FriendStatus[]>
   );
 
   return statuses;
+}
+
+/**
+ * Add a friend by invite code (creates bidirectional friendship)
+ */
+export async function addFriendByInviteCode(
+  currentUserId: string,
+  inviteCode: string
+): Promise<{ success: boolean; message: string }> {
+  if (!currentUserId || !inviteCode) {
+    return { success: false, message: "Invalid user ID or invite code." };
+  }
+
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  // Find user by invite code
+  const targetUser = await getUserByInviteCode(inviteCode.toUpperCase());
+  if (!targetUser) {
+    return { success: false, message: "Invalid invite code." };
+  }
+
+  const targetUserId = targetUser._id.toString();
+
+  // Check if trying to add self
+  const currentUserObjectId = ObjectId.isValid(currentUserId)
+    ? new ObjectId(currentUserId)
+    : null;
+  
+  if (currentUserObjectId && targetUser._id.equals(currentUserObjectId)) {
+    return { success: false, message: "You cannot add yourself as a friend." };
+  }
+
+  // Check if already friends (bidirectional check)
+  const existingFollow1 = await db.collection("follows").findOne({
+    followerId: currentUserId,
+    followeeId: targetUserId,
+  });
+
+  const existingFollow2 = await db.collection("follows").findOne({
+    followerId: targetUserId,
+    followeeId: currentUserId,
+  });
+
+  if (existingFollow1 || existingFollow2) {
+    return { success: false, message: "You are already friends with this user." };
+  }
+
+  // Create bidirectional friendship
+  const now = new Date();
+  await db.collection("follows").insertMany([
+    {
+      followerId: currentUserId,
+      followeeId: targetUserId,
+      createdAt: now,
+    },
+    {
+      followerId: targetUserId,
+      followeeId: currentUserId,
+      createdAt: now,
+    },
+  ]);
+
+  return {
+    success: true,
+    message: `Successfully added ${targetUser.username || targetUser.lastfmUsername || "user"} as a friend!`,
+  };
+}
+
+/**
+ * Get list of friends for a user
+ */
+export async function getFriends(userId: string): Promise<Array<{
+  id: string;
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+}>> {
+  if (!userId) return [];
+
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  const follows = await db
+    .collection<FollowDoc>("follows")
+    .find({ followerId: userId })
+    .toArray();
+
+  if (!follows.length) {
+    return [];
+  }
+
+  const userIds = follows.map((follow) => follow.followeeId).filter(Boolean);
+  const usersCollection = db.collection("users");
+  const followeeObjectIds = userIds
+    .filter((id) => ObjectId.isValid(id))
+    .map((id) => new ObjectId(id));
+
+  const users = await usersCollection
+    .find({
+      $or: [
+        { _id: { $in: followeeObjectIds } },
+        { id: { $in: userIds } },
+      ],
+    })
+    .project({
+      username: 1,
+      lastfmUsername: 1,
+      image: 1,
+      displayName: 1,
+    })
+    .toArray();
+
+  return users.map((userDoc) => ({
+    id: userDoc._id?.toString() ?? (userDoc as any).id ?? "",
+    username: userDoc.username ?? userDoc.lastfmUsername ?? "listener",
+    displayName: userDoc.displayName ?? null,
+    avatarUrl: userDoc.image ?? null,
+  }));
 }
 
