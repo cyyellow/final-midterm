@@ -19,6 +19,7 @@ export async function createPost(
     thoughts: input.thoughts,
     createdAt: new Date(),
     likes: 0,
+    isPublic: input.isPublic ?? false,
   };
 
   const result = await db.collection("posts").insertOne(post);
@@ -29,13 +30,38 @@ export async function createPost(
   };
 }
 
-export async function getPosts(limit = 100): Promise<Post[]> {
+export async function getPosts(limit = 100, currentUserId?: string): Promise<Post[]> {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
+  // If no user ID is provided, return only public posts (if we had a public flag) or empty/limited list
+  // For now, we'll assume posts are friends-only by default, so without a user ID we might return nothing
+  // or return all posts if we want a public feed behavior (which seems to be current behavior).
+  // But the user requested permission control.
+  
+  if (!currentUserId) {
+    // If we want to enforce "friends only" and no user is logged in, return empty.
+    // However, `getPosts` might be used in contexts where we want all posts (e.g. admin).
+    // Let's keep the original behavior if no ID is passed, but typically we should pass ID.
+    return [];
+  }
+
+  // Get list of friends
+  const { getFriends } = await import("./friends");
+  const friends = await getFriends(currentUserId);
+  const friendIds = friends.map(f => f.id);
+
+  // Include self
+  const allowedUserIds = [...friendIds, currentUserId];
+
   const posts = await db
     .collection("posts")
-    .find({})
+    .find({
+      $or: [
+        { userId: { $in: allowedUserIds } },
+        { isPublic: true }
+      ]
+    })
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();

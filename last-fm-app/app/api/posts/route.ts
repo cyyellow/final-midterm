@@ -12,6 +12,7 @@ const createPostSchema = z.object({
     url: z.string().optional(),
   }),
   thoughts: z.string().min(1).max(200),
+  isPublic: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -23,13 +24,13 @@ export async function POST(request: Request) {
     }
 
     const json = await request.json();
-    const { track, thoughts } = createPostSchema.parse(json);
+    const { track, thoughts, isPublic } = createPostSchema.parse(json);
 
     const post = await createPost(
       session.user.id,
       session.user.username || "Anonymous",
       session.user.image,
-      { track, thoughts }
+      { track, thoughts, isPublic }
     );
 
     return NextResponse.json(post, { status: 201 });

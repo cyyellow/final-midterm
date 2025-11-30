@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
-  const posts = await getPosts();
+  const posts = await getPosts(100, session.user.id);
 
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-secondary/10">

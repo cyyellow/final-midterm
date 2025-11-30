@@ -13,6 +13,7 @@ export interface Post {
   thoughts: string;
   createdAt: Date;
   likes?: number;
+  isPublic?: boolean;
 }
 
 export interface CreatePostInput {
@@ -24,6 +25,7 @@ export interface CreatePostInput {
     url?: string;
   };
   thoughts: string;
+  isPublic?: boolean;
 }
 
 

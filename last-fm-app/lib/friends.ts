@@ -109,43 +109,54 @@ export async function addFriendByInviteCode(
     return { success: false, message: "Invalid invite code." };
   }
 
-  const targetUserId = targetUser._id.toString();
+  // Normalize user IDs to ensure consistent format (always use string representation)
+  const normalizeUserId = (userId: string): string => {
+    if (ObjectId.isValid(userId)) {
+      return new ObjectId(userId).toString();
+    }
+    return userId;
+  };
 
-  // Check if trying to add self
-  const currentUserObjectId = ObjectId.isValid(currentUserId)
-    ? new ObjectId(currentUserId)
-    : null;
-  
-  if (currentUserObjectId && targetUser._id.equals(currentUserObjectId)) {
+  const targetUserId = targetUser._id.toString();
+  const normalizedCurrentUserId = normalizeUserId(currentUserId);
+  const normalizedTargetUserId = normalizeUserId(targetUserId);
+
+  // Check if trying to add self (compare normalized IDs)
+  if (normalizedCurrentUserId === normalizedTargetUserId) {
     return { success: false, message: "You cannot add yourself as a friend." };
   }
 
   // Check if already friends (bidirectional check)
+  // Check both normalized and original formats to handle edge cases
   const existingFollow1 = await db.collection("follows").findOne({
-    followerId: currentUserId,
-    followeeId: targetUserId,
+    $or: [
+      { followerId: normalizedCurrentUserId, followeeId: normalizedTargetUserId },
+      { followerId: currentUserId, followeeId: targetUserId },
+    ],
   });
 
   const existingFollow2 = await db.collection("follows").findOne({
-    followerId: targetUserId,
-    followeeId: currentUserId,
+    $or: [
+      { followerId: normalizedTargetUserId, followeeId: normalizedCurrentUserId },
+      { followerId: targetUserId, followeeId: currentUserId },
+    ],
   });
 
   if (existingFollow1 || existingFollow2) {
     return { success: false, message: "You are already friends with this user." };
   }
 
-  // Create bidirectional friendship
+  // Create bidirectional friendship using normalized IDs
   const now = new Date();
   await db.collection("follows").insertMany([
     {
-      followerId: currentUserId,
-      followeeId: targetUserId,
+      followerId: normalizedCurrentUserId,
+      followeeId: normalizedTargetUserId,
       createdAt: now,
     },
     {
-      followerId: targetUserId,
-      followeeId: currentUserId,
+      followerId: normalizedTargetUserId,
+      followeeId: normalizedCurrentUserId,
       createdAt: now,
     },
   ]);

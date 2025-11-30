@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { Loader2, Globe, Lock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type { LastfmTrack } from "@/lib/lastfm";
 
 interface CreatePostDialogProps {
@@ -24,6 +26,7 @@ const MAX_CHARACTERS = 200;
 
 export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialogProps) {
   const [thoughts, setThoughts] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -44,11 +47,13 @@ export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialog
             url: track.url,
           },
           thoughts: thoughts.trim(),
+          isPublic,
         }),
       });
 
       if (response.ok) {
         setThoughts("");
+        setIsPublic(false);
         onOpenChange(false);
         router.refresh();
       }
@@ -110,6 +115,19 @@ export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialog
                   {remainingChars} characters remaining
                 </span>
               </div>
+            </div>
+
+            {/* Visibility Toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="public-mode"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
+              <Label htmlFor="public-mode" className="flex items-center gap-2 cursor-pointer">
+                {isPublic ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                {isPublic ? "Public Post" : "Friends Only"}
+              </Label>
             </div>
 
             {/* Actions */}
