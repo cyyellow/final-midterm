@@ -3,6 +3,13 @@ import crypto from "crypto";
 
 import { clientPromise } from "@/lib/mongodb";
 
+export type FavoriteTrack = {
+  name: string;
+  artist: string;
+  image?: string;
+  url?: string;
+};
+
 export type AppUser = {
   _id: ObjectId;
   username?: string | null;
@@ -12,9 +19,33 @@ export type AppUser = {
   displayName?: string | null;
   bio?: string | null;
   inviteCode?: string | null;
+  favoriteTracks?: FavoriteTrack[];
   createdAt?: Date;
   updatedAt?: Date;
 };
+
+export async function updateUserProfile(
+  userId: string, 
+  data: { 
+    displayName?: string; 
+    bio?: string; 
+    favoriteTracks?: FavoriteTrack[] 
+  }
+) {
+  const collection = await getUsersCollection();
+  const filter = ObjectId.isValid(userId)
+    ? { _id: new ObjectId(userId) }
+    : { id: userId };
+
+  await collection.updateOne(filter, {
+    $set: {
+      ...data,
+      updatedAt: new Date(),
+    }
+  });
+
+  return true;
+}
 
 function normalizeUsername(username: string) {
   return username.trim().toLowerCase();

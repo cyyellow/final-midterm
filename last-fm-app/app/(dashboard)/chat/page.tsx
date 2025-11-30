@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { getEvents } from "@/lib/events";
+import { getFriends } from "@/lib/friends";
 import { ChatPageClient } from "./chat-client";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,15 @@ export default async function ChatPage() {
   // Filter for events that have chat enabled
   const chatEvents = userEvents.filter(event => event.requiresChat && event.chatRoomId);
 
-  return <ChatPageClient events={chatEvents} currentUserId={session.user.id} />;
+  // Get friends
+  const friends = await getFriends(session.user.id);
+
+  return (
+    <ChatPageClient 
+      events={chatEvents} 
+      friends={friends} 
+      currentUserId={session.user.id} 
+    />
+  );
 }
 

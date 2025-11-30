@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { AuthProvider } from "@/components/providers/session-provider";
+import { Toaster } from "@/components/ui/toaster";
 import { getAuthSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,10 @@ export default async function RootLayout({
           jetBrainsMono.variable,
         )}
       >
-        <AuthProvider session={session}>{children}</AuthProvider>
+        <AuthProvider session={session}>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,15 +1,54 @@
-export default function SocietyPage() {
+import { redirect } from "next/navigation";
+import { getAuthSession } from "@/lib/auth";
+import { getPosts } from "@/lib/posts";
+import { FeedPost } from "@/components/feed-post";
+import { Users } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+
+export default async function SocietyPage() {
+  const session = await getAuthSession();
+
+  if (!session?.user) {
+    redirect("/signin");
+  }
+
+  // Fetch posts (Feed)
+  const posts = await getPosts(100, session.user.id);
+
   return (
-    <div className="flex flex-1 flex-col gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-6 lg:px-10">
-      <div className="glass-card rounded-xl border border-dashed border-primary/30 p-10 text-center">
-        <h2 className="text-xl font-semibold text-foreground">My society</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This area will showcase your curated circles, invite-only listening parties,
-          and collaborative playlists. Stay tuned for upcoming updates.
-        </p>
+    <div className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-secondary/10">
+      <div className="mx-auto w-full max-w-4xl p-6 space-y-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-primary/10 rounded-full">
+            <Users className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">My Society</h1>
+            <p className="text-muted-foreground text-sm">
+              Updates from your friends and music circle
+            </p>
+          </div>
+        </div>
+
+        {posts.length > 0 ? (
+          <div className="space-y-4 max-w-2xl mx-auto">
+            {posts.map((post) => (
+              <FeedPost key={post._id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed p-12 text-center bg-card/50">
+            <div className="flex justify-center mb-4">
+              <Users className="h-10 w-10 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-lg font-medium">No posts yet</h3>
+            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
+              Connect with friends or share your own music moments to see them here!
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
-

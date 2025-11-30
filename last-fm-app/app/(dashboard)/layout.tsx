@@ -28,7 +28,7 @@ export default async function DashboardLayout({
   const [nowPlaying, recentTracks] = username
     ? await Promise.all([
         getNowPlaying(username),
-        getRecentTracks(username, 15),
+        getRecentTracks(username, 5),
       ])
     : [null, []];
 

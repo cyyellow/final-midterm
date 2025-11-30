@@ -121,6 +121,21 @@ export async function getNowPlaying(username: string) {
   return track && track["@attr"]?.nowplaying === "true" ? track : null;
 }
 
+export async function getTopArtists(username: string, limit = 5, period = "7day") {
+  const data = await fetchLastfm<{
+    topartists?: {
+      artist?: LastfmArtist[];
+    };
+  }>({
+    method: "user.getTopArtists",
+    user: username,
+    limit: limit.toString(),
+    period,
+  });
+
+  return data.topartists?.artist ?? [];
+}
+
 export async function getWeeklyTopArtists(username: string) {
   const data = await fetchLastfm<{
     weeklyartistchart?: {
@@ -132,6 +147,38 @@ export async function getWeeklyTopArtists(username: string) {
   });
 
   return data.weeklyartistchart?.artist ?? [];
+}
+
+export async function searchTracks(query: string, limit = 20) {
+  const data = await fetchLastfm<{
+    results?: {
+      trackmatches?: {
+        track?: Array<{
+          name: string;
+          artist: string;
+          url: string;
+          image?: Array<{
+            size: string;
+            "#text": string;
+          }>;
+        }>;
+      };
+    };
+  }>({
+    method: "track.search",
+    track: query,
+    limit: limit.toString(),
+  });
+
+  // Normalize the search results to match LastfmTrack structure approximately
+  return (data.results?.trackmatches?.track ?? []).map((track) => ({
+    name: track.name,
+    url: track.url,
+    artist: {
+      "#text": track.artist,
+    },
+    image: track.image,
+  }));
 }
 
 export async function requestSession(token: string) {

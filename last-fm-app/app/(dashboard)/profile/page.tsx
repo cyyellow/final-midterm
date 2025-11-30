@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Music, Disc } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,6 +7,9 @@ import { getAuthSession } from "@/lib/auth";
 import { getUserById } from "@/lib/users";
 import { getUserPosts } from "@/lib/posts";
 import { TrackGrid } from "@/components/track-grid";
+import { EditProfileDialog } from "@/components/edit-profile-dialog";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const session = await getAuthSession();
@@ -39,26 +42,73 @@ export default async function ProfilePage() {
       {/* Profile Header */}
       <Card className="border-border/60 bg-card/70 backdrop-blur">
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={user?.image || session.user.image || undefined} />
-              <AvatarFallback className="text-2xl">
-                {(user?.username || session.user.username || "U")[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-2xl font-bold">
-                {user?.username ?? session.user.username ?? "Anonymous"}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                @{user?.lastfmUsername ?? session.user.lastfmUsername}
-              </p>
-              <p className="mt-2 text-sm">
-                {user?.bio ?? "Music is life 🎵"}
-              </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
+                <AvatarImage src={user?.image || session.user.image || undefined} />
+                <AvatarFallback className="text-2xl">
+                  {(user?.displayName || user?.username || "U")[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-2xl font-bold">
+                  {user?.displayName || user?.username || "Anonymous"}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  @{user?.lastfmUsername || session.user.lastfmUsername}
+                </p>
+                {user?.bio && (
+                  <p className="mt-2 text-sm max-w-md">
+                    {user.bio}
+                  </p>
+                )}
+                {!user?.bio && (
+                  <p className="mt-2 text-sm italic text-muted-foreground">
+                    Music is life 🎵
+                  </p>
+                )}
+              </div>
             </div>
+            
+            {user && (
+              <EditProfileDialog 
+                user={user} 
+                currentUserLastfmUsername={session.user.lastfmUsername!} 
+              />
+            )}
           </div>
         </CardHeader>
+        
+        {user?.favoriteTracks && user.favoriteTracks.length > 0 && (
+          <CardContent className="pt-0 pb-6">
+            <div className="mt-4">
+              <h3 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                <Disc className="h-4 w-4" />
+                Favorite Tracks
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {user.favoriteTracks.map((track, i) => (
+                  <a
+                    key={i}
+                    href={track.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background transition-colors border border-transparent hover:border-border"
+                  >
+                    <Avatar className="h-10 w-10 rounded-md">
+                      <AvatarImage src={track.image} />
+                      <AvatarFallback><Music className="h-4 w-4" /></AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 overflow-hidden">
+                      <p className="truncate text-sm font-medium">{track.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">{track.artist}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Posts by Week */}

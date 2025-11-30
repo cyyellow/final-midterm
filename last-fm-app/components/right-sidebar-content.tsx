@@ -108,54 +108,54 @@ export function RightSidebarContent({
         </Card>
       )}
 
-      {/* Listening History - Scrollable */}
-      <Card className="mb-4 flex min-h-0 flex-1 flex-col">
-        <CardHeader className="flex-shrink-0 pb-2 px-3 pt-3">
+      {/* Listening History - Fixed height for 5 items */}
+      <Card className="mb-4 flex flex-col">
+        <CardHeader className="pb-2 px-3 pt-3">
           <CardTitle className="text-xs font-semibold uppercase tracking-wide">Listening History</CardTitle>
         </CardHeader>
-        <CardContent className="min-h-0 flex-1 px-0 pb-2">
-          <ScrollArea className="h-full px-2">
-            <div className="space-y-0.5">
-              <HistoryTracksList tracks={recentTracks.slice(0, 20)} />
-            </div>
-          </ScrollArea>
+        <CardContent className="px-0 pb-2">
+          <div className="px-2 space-y-0.5">
+            <HistoryTracksList tracks={recentTracks.slice(0, 5)} />
+          </div>
         </CardContent>
       </Card>
 
       <Separator className="mb-4" />
 
-      {/* Friend Activity - Fixed at bottom */}
-      <div className="flex-shrink-0 pb-4">
-        <h3 className="mb-3 text-sm font-medium text-muted-foreground">Friend Activity</h3>
-        {friendStatuses.length > 0 ? (
-          <div className="space-y-3">
-            {friendStatuses.slice(0, 3).map((friend) => (
-              <div key={friend.id} className="flex items-start gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={friend.image} alt={friend.username} />
-                  <AvatarFallback>{friend.username[0]?.toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{friend.username}</p>
-                  {friend.nowPlaying ? (
-                    <div className="mt-0.5">
-                      <Badge variant="secondary" className="text-xs">
-                        Listening
-                      </Badge>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {friend.nowPlaying.track} • {friend.nowPlaying.artist}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Offline</p>
-                  )}
+      {/* Friend Activity - Fills remaining space */}
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col pb-4">
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground flex-shrink-0">Friend Activity</h3>
+        <ScrollArea className="flex-1">
+          {friendStatuses.length > 0 ? (
+            <div className="space-y-3 pr-3">
+              {friendStatuses.map((friend) => (
+                <div key={friend.id} className="flex items-start gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={friend.image} alt={friend.username} />
+                    <AvatarFallback>{friend.username[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{friend.username}</p>
+                    {friend.nowPlaying ? (
+                      <div className="mt-0.5">
+                        <Badge variant="secondary" className="text-xs">
+                          Listening
+                        </Badge>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {friend.nowPlaying.track} • {friend.nowPlaying.artist}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Offline</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">No friends online</p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No friends online</p>
+          )}
+        </ScrollArea>
       </div>
 
       <CreatePostDialog
