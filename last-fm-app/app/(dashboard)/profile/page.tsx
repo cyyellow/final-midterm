@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
-import { ChevronLeft, ChevronRight, Music, Disc } from "lucide-react";
+import { Disc } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getAuthSession } from "@/lib/auth";
 import { getUserById } from "@/lib/users";
 import { getUserPosts } from "@/lib/posts";
 import { TrackGrid } from "@/components/track-grid";
 import { EditProfileDialog } from "@/components/edit-profile-dialog";
+import { TrackImage } from "@/components/track-image";
 
 export const dynamic = "force-dynamic";
 
@@ -96,21 +96,7 @@ export default async function ProfilePage() {
                     className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background transition-colors border border-transparent hover:border-border"
                   >
                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
-                      {track.image ? (
-                        <img
-                          src={track.image}
-                          alt={track.name}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : null}
-                      {!track.image && (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Music className="h-5 w-5 text-primary/60" />
-                        </div>
-                      )}
+                      <TrackImage src={track.image} alt={track.name} />
                     </div>
                     <div className="min-w-0 overflow-hidden">
                       <p className="truncate text-sm font-medium">{track.name}</p>

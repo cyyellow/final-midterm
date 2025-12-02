@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Music2, Disc } from "lucide-react";
+import { Music2, Send } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
@@ -79,29 +79,13 @@ export function RightSidebarContent({
                 onClick={() => handleRecordClick(nowPlaying)}
                 title="Record a moment"
               >
-                <Disc className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
           <CardContent className="px-3 pb-3">
             <div className="flex gap-2">
-              <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md bg-gradient-to-br from-primary/20 to-primary/5">
-                {nowPlaying.image && nowPlaying.image.length > 0 ? (
-                  <Image
-                    src={
-                      nowPlaying.image.find((img) => img.size === "large")?.["#text"] ||
-                      nowPlaying.image[0]["#text"]
-                    }
-                    alt={nowPlaying.name}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <Music2 className="h-6 w-6 text-primary/60" />
-                  </div>
-                )}
-              </div>
+              <NowPlayingImage track={nowPlaying} />
               <div className="min-w-0 flex-1">
                 <h3 className="line-clamp-2 text-xs font-semibold leading-tight">{nowPlaying.name}</h3>
                 <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{nowPlaying.artist["#text"]}</p>
@@ -123,7 +107,11 @@ export function RightSidebarContent({
         </CardHeader>
         <CardContent className="px-0 pb-2">
           <div className="px-2 space-y-0.5">
-            <HistoryTracksList tracks={recentTracks.slice(0, 5)} />
+            <HistoryTracksList 
+              tracks={recentTracks
+                .filter((track) => track["@attr"]?.nowplaying !== "true")
+                .slice(0, 5)} 
+            />
           </div>
         </CardContent>
       </Card>
@@ -180,11 +168,69 @@ export function RightSidebarContent({
   );
 }
 
+function HistoryTrackImage({ track }: { track: LastfmTrack }) {
+  const [hasError, setHasError] = useState(false);
+  
+  const trackImage = track.image?.find((img) => img.size === "small")?.["#text"] ||
+                     track.image?.find((img) => img.size === "medium")?.["#text"] ||
+                     track.image?.[0]?.["#text"];
+  
+  const showImage = trackImage && trackImage.trim() !== "" && !hasError;
+  
+  return (
+    <div className="relative h-6 w-6 flex-shrink-0 overflow-hidden rounded bg-gradient-to-br from-primary/20 to-primary/5">
+      {showImage ? (
+        <Image
+          src={trackImage}
+          alt={track.name}
+          fill
+          className="object-cover"
+          sizes="24px"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <Music2 className="h-3 w-3 text-primary/60" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NowPlayingImage({ track }: { track: LastfmTrack }) {
+  const [hasError, setHasError] = useState(false);
+  
+  const imageUrl = track.image?.find((img) => img.size === "large")?.["#text"] ||
+                   track.image?.find((img) => img.size === "medium")?.["#text"] ||
+                   track.image?.[0]?.["#text"];
+  
+  const showImage = imageUrl && imageUrl.trim() !== "" && !hasError;
+  
+  return (
+    <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md bg-gradient-to-br from-primary/20 to-primary/5">
+      {showImage ? (
+        <Image
+          src={imageUrl}
+          alt={track.name}
+          fill
+          className="object-cover"
+          sizes="56px"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <Music2 className="h-6 w-6 text-primary/60" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HistoryTracksList({ tracks }: { tracks: LastfmTrack[] }) {
   const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
 
-  const handleRecordClick = (track: LastfmTrack, e: React.MouseEvent) => {
+  const handlePostClick = (track: LastfmTrack, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedTrack(track);
     setShowCreatePost(true);
@@ -199,13 +245,7 @@ function HistoryTracksList({ tracks }: { tracks: LastfmTrack[] }) {
             key={`${track.name}-${index}`}
             className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
           >
-            <button
-              onClick={(e) => handleRecordClick(track, e)}
-              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded p-0.5 text-muted-foreground/60 transition-all hover:bg-primary/10 hover:text-primary"
-              title="Record a moment"
-            >
-              <Disc className="h-4 w-4" />
-            </button>
+            <HistoryTrackImage track={track} />
             <div className="min-w-0 flex-1">
               <Link
                 href={track.url}
@@ -224,6 +264,15 @@ function HistoryTracksList({ tracks }: { tracks: LastfmTrack[] }) {
                 </span>
               </div>
             </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 flex-shrink-0 opacity-0 transition-all group-hover:opacity-100"
+              onClick={(e) => handlePostClick(track, e)}
+              title="Post this track"
+            >
+              <Send className="h-3.5 w-3.5" />
+            </Button>
           </div>
         );
       })}

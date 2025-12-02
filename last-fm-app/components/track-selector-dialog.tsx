@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { Loader2, Disc3 } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -61,7 +61,7 @@ export function TrackSelectorDialog({ open, onOpenChange }: TrackSelectorDialogP
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Disc3 className="h-5 w-5" />
+              <Send className="h-5 w-5" />
               Select a Track
             </DialogTitle>
           </DialogHeader>
