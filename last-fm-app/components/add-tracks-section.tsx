@@ -37,24 +37,24 @@ function TrackList({ tracks, onAdd }: { tracks: LastfmTrack[]; onAdd: (track: La
       {tracks.map((track, i) => {
         const imageUrl = getBestImage(track.image);
         return (
-          <div key={`${track.url || track.name}-${i}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
+          <div key={`${track.url || track.name}-${i}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
               {imageUrl ? (
                 <Image
                   src={imageUrl}
                   alt={track.name}
                   fill
                   className="object-cover"
-                  sizes="48px"
+                  sizes="40px"
                   onError={() => {}}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <Music className="h-6 w-6 text-primary/60" />
+                  <Music className="h-5 w-5 text-primary/60" />
                 </div>
               )}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 pr-2">
               <p className="truncate text-sm font-medium">{track.name}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {track.artist["#text"]}
@@ -62,11 +62,16 @@ function TrackList({ tracks, onAdd }: { tracks: LastfmTrack[]; onAdd: (track: La
             </div>
             <Button 
               size="sm" 
-              variant="ghost"
-              onClick={() => onAdd(track)}
-              className="shrink-0"
+              variant="default"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAdd(track);
+              }}
+              className="shrink-0 h-8 w-8 p-0 bg-primary hover:bg-primary/90 flex items-center justify-center flex-shrink-0"
+              title="Add to playlist"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 text-primary-foreground" />
             </Button>
           </div>
         );
@@ -179,14 +184,16 @@ export function AddTracksSection({
             )}
           </Button>
         )}
-        <ScrollArea className="h-[400px] pr-4">
-          {loading && recentTracks.length === 0 ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <TrackList tracks={recentTracks} onAdd={onAdd} />
-          )}
+        <ScrollArea className="h-[400px]">
+          <div className="pr-2">
+            {loading && recentTracks.length === 0 ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <TrackList tracks={recentTracks} onAdd={onAdd} />
+            )}
+          </div>
         </ScrollArea>
       </TabsContent>
       
@@ -202,18 +209,20 @@ export function AddTracksSection({
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           </Button>
         </form>
-        <ScrollArea className="h-[400px] pr-4">
-          {loading && searchResults.length === 0 ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : searchResults.length > 0 ? (
-            <TrackList tracks={searchResults} onAdd={onAdd} />
-          ) : (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Search for any song on Last.fm
-            </div>
-          )}
+        <ScrollArea className="h-[400px]">
+          <div className="pr-2">
+            {loading && searchResults.length === 0 ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : searchResults.length > 0 ? (
+              <TrackList tracks={searchResults} onAdd={onAdd} />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Search for any song on Last.fm
+              </div>
+            )}
+          </div>
         </ScrollArea>
       </TabsContent>
       
@@ -258,4 +267,5 @@ export function AddTracksSection({
     </Tabs>
   );
 }
+
 

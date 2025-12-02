@@ -6,21 +6,36 @@ import { getAuthSession } from "@/lib/auth";
 import { getUserById } from "@/lib/users";
 import { getUserPosts } from "@/lib/posts";
 import { TrackGrid } from "@/components/track-grid";
-import { EditProfileDialog } from "@/components/edit-profile-dialog";
+import { Music } from "lucide-react";
 import { TrackImage } from "@/components/track-image";
 import { getMusicLink } from "@/lib/music-links";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProfilePage() {
+export default async function UserProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const session = await getAuthSession();
+  const { id } = await params;
 
   if (!session?.user) {
     redirect("/signin");
   }
 
-  const user = await getUserById(session.user.id);
-  const posts = await getUserPosts(session.user.id);
+  // If viewing own profile, redirect to /profile
+  if (id === session.user.id) {
+    redirect("/profile");
+  }
+
+  const user = await getUserById(id);
+  
+  if (!user) {
+    redirect("/");
+  }
+
+  const posts = await getUserPosts(id);
 
   // Group posts by week
   const postsByWeek = posts.reduce((acc, post) => {
@@ -46,7 +61,7 @@ export default async function ProfilePage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-                <AvatarImage src={user?.image || session.user.image || undefined} />
+                <AvatarImage src={user?.image || undefined} />
                 <AvatarFallback className="text-2xl">
                   {(user?.displayName || user?.username || "U")[0].toUpperCase()}
                 </AvatarFallback>
@@ -56,7 +71,7 @@ export default async function ProfilePage() {
                   {user?.displayName || user?.username || "Anonymous"}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  @{user?.lastfmUsername || session.user.lastfmUsername}
+                  @{user?.lastfmUsername || user?.username}
                 </p>
                 {user?.bio && (
                   <p className="mt-2 text-sm max-w-md">
@@ -70,13 +85,6 @@ export default async function ProfilePage() {
                 )}
               </div>
             </div>
-            
-            {user && (
-              <EditProfileDialog 
-                user={user} 
-                currentUserLastfmUsername={session.user.lastfmUsername!} 
-              />
-            )}
           </div>
         </CardHeader>
         
@@ -97,7 +105,7 @@ export default async function ProfilePage() {
                     className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background transition-colors border border-transparent hover:border-border"
                   >
                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
-                      <TrackImage src={track.image} alt={track.name} />
+                      <TrackImage src={track.image} alt={track.name} fill sizes="40px" />
                     </div>
                     <div className="min-w-0 overflow-hidden">
                       <p className="truncate text-sm font-medium">{track.name}</p>
@@ -113,7 +121,7 @@ export default async function ProfilePage() {
 
       {/* Posts by Week */}
       <div className="space-y-8">
-        <h2 className="text-xl font-semibold">Your Music Moments</h2>
+        <h2 className="text-xl font-semibold">Music Moments</h2>
         
         {weeks.length > 0 ? (
           weeks.map(([weekKey, weekPosts]) => {
@@ -133,7 +141,7 @@ export default async function ProfilePage() {
           <Card className="border-dashed">
             <CardContent className="flex min-h-[200px] items-center justify-center">
               <p className="text-muted-foreground">
-                No posts yet. Start sharing your music moments!
+                No posts yet.
               </p>
             </CardContent>
           </Card>
@@ -142,5 +150,4 @@ export default async function ProfilePage() {
     </div>
   );
 }
-
 

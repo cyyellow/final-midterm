@@ -175,6 +175,8 @@ export async function getFriends(userId: string): Promise<Array<{
   username: string;
   displayName?: string | null;
   avatarUrl?: string | null;
+  bio?: string | null;
+  lastfmUsername?: string | null;
 }>> {
   if (!userId) return [];
 
@@ -208,6 +210,7 @@ export async function getFriends(userId: string): Promise<Array<{
       lastfmUsername: 1,
       image: 1,
       displayName: 1,
+      bio: 1,
     })
     .toArray();
 
@@ -216,6 +219,8 @@ export async function getFriends(userId: string): Promise<Array<{
     username: userDoc.username ?? userDoc.lastfmUsername ?? "listener",
     displayName: userDoc.displayName ?? null,
     avatarUrl: userDoc.image ?? null,
+    bio: userDoc.bio ?? null,
+    lastfmUsername: userDoc.lastfmUsername ?? null,
   }));
 }
 

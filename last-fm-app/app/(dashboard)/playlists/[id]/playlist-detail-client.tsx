@@ -209,21 +209,21 @@ export function PlaylistDetailClient({ initialPlaylist, username }: PlaylistDeta
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Add Tracks Section - Inline */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>Add Tracks</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4">
               <AddTracksSection username={username} onAdd={handleAddTrack} autoLoadRecent={false} />
             </CardContent>
           </Card>
         </div>
 
         {/* Playlist Tracks */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           <Card>
             <CardHeader>
               <CardTitle>{playlist.tracks.length} Tracks</CardTitle>

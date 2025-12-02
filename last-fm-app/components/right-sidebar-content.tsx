@@ -14,19 +14,13 @@ import type { LastfmTrack } from "@/lib/lastfm";
 import type { Playlist } from "@/lib/playlist";
 import { CreatePostDialog } from "./create-post-dialog";
 import { PlaylistsWidget } from "./playlists-widget";
+import { FriendsWidget } from "./friends-widget";
+import type { FriendStatus } from "./right-status";
 
 interface RightSidebarContentProps {
   nowPlaying: LastfmTrack | null;
   recentTracks: LastfmTrack[];
-  friendStatuses: Array<{
-    id: string;
-    username: string;
-    image?: string;
-    nowPlaying?: {
-      track: string;
-      artist: string;
-    };
-  }>;
+  friendStatuses: FriendStatus[];
   playlists: Playlist[];
 }
 
@@ -121,6 +115,11 @@ export function RightSidebarContent({
         <PlaylistsWidget playlists={playlists} />
       </div>
 
+      {/* Friends Widget */}
+      <div className="mb-4">
+        <FriendsWidget friendStatuses={friendStatuses} />
+      </div>
+
       <Separator className="mb-4" />
 
       {/* Friend Activity - Fills remaining space */}
@@ -132,19 +131,22 @@ export function RightSidebarContent({
               {friendStatuses.map((friend) => (
                 <div key={friend.id} className="flex items-start gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={friend.image} alt={friend.username} />
-                    <AvatarFallback>{friend.username[0]?.toUpperCase()}</AvatarFallback>
+                    <AvatarImage src={friend.avatarUrl || undefined} alt={friend.username} />
+                    <AvatarFallback>{(friend.displayName || friend.username)[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{friend.username}</p>
-                    {friend.nowPlaying ? (
+                    <p className="text-sm font-medium">{friend.displayName || friend.username}</p>
+                    {friend.isListening ? (
                       <div className="mt-0.5">
                         <Badge variant="secondary" className="text-xs">
                           Listening
                         </Badge>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {friend.nowPlaying.track} • {friend.nowPlaying.artist}
-                        </p>
+                        {friend.trackName && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {friend.trackName}
+                            {friend.artistName && ` • ${friend.artistName}`}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">Offline</p>
