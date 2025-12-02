@@ -242,3 +242,28 @@ export async function getAuthToken(token: string) {
   return session.key;
 }
 
+export type LastfmAlbum = {
+  name: string;
+  artist: string;
+  playcount?: string;
+  url: string;
+  image?: Array<{
+    size: "small" | "medium" | "large" | "extralarge" | "mega";
+    "#text": string;
+  }>;
+};
+
+export async function getTopAlbums(artist: string, limit = 1) {
+  const data = await fetchLastfm<{
+    topalbums?: {
+      album?: LastfmAlbum[];
+    };
+  }>({
+    method: "artist.getTopAlbums",
+    artist: artist,
+    limit: limit.toString(),
+  });
+
+  return data.topalbums?.album ?? [];
+}
+

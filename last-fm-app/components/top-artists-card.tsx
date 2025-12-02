@@ -1,9 +1,117 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { LastfmArtist } from "@/lib/lastfm";
 import { Trophy } from "lucide-react";
 
+function ArtistAvatar({ artist, albumImage }: { artist: LastfmArtist; albumImage?: string | null }) {
+  const [hasError, setHasError] = useState(false);
+  
+  const getImageUrl = () => {
+    // Prefer album image if available
+    if (albumImage && albumImage.trim() !== "") {
+      return albumImage;
+    }
+    
+    // Fallback to artist image
+    if (!artist.image || artist.image.length === 0) return null;
+    
+    const sizeOrder = ["extralarge", "large", "medium", "small", "mega"];
+    for (const size of sizeOrder) {
+      const image = artist.image.find(i => 
+        i.size?.toLowerCase() === size && 
+        i["#text"] && 
+        i["#text"].trim() !== ""
+      );
+      if (image && image["#text"].trim() !== "") {
+        return image["#text"];
+      }
+    }
+    
+    return null;
+  };
+  
+  const imageUrl = getImageUrl();
+  const showImage = imageUrl && !hasError;
+  
+  if (!showImage) {
+    return (
+      <Avatar className="h-10 w-10">
+        <AvatarFallback>{artist.name[0]?.toUpperCase()}</AvatarFallback>
+      </Avatar>
+    );
+  }
+  
+  return (
+    <Avatar className="h-10 w-10">
+      <AvatarImage 
+        src={imageUrl} 
+        alt={artist.name}
+        onError={() => setHasError(true)}
+        onLoad={() => {
+          if (hasError) setHasError(false);
+        }}
+      />
+      <AvatarFallback>{artist.name[0]?.toUpperCase()}</AvatarFallback>
+    </Avatar>
+  );
+}
+
 export function TopArtistsCard({ artists }: { artists: LastfmArtist[] }) {
+  const [albumImages, setAlbumImages] = useState<Record<string, string | null>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAlbumImages = async () => {
+      const topArtists = artists.slice(0, 5);
+      const imageMap: Record<string, string | null> = {};
+
+      // Fetch album images for all artists in parallel
+      await Promise.all(
+        topArtists.map(async (artist) => {
+          try {
+            const res = await fetch(`/api/lastfm/top-albums?artist=${encodeURIComponent(artist.name)}`);
+            if (res.ok) {
+              const data = await res.json();
+              const albums = data.albums || [];
+              if (albums.length > 0) {
+                const album = albums[0];
+                // Get the best available image size
+                const imageUrl = album.image?.find((img: { size: string }) => img.size === "large")?.["#text"] ||
+                                album.image?.find((img: { size: string }) => img.size === "extralarge")?.["#text"] ||
+                                album.image?.find((img: { size: string }) => img.size === "medium")?.["#text"] ||
+                                album.image?.[0]?.["#text"];
+                if (imageUrl && imageUrl.trim() !== "") {
+                  imageMap[artist.name] = imageUrl;
+                } else {
+                  imageMap[artist.name] = null;
+                }
+              } else {
+                imageMap[artist.name] = null;
+              }
+            } else {
+              imageMap[artist.name] = null;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch album for ${artist.name}:`, error);
+            imageMap[artist.name] = null;
+          }
+        })
+      );
+
+      setAlbumImages(imageMap);
+      setLoading(false);
+    };
+
+    if (artists.length > 0) {
+      fetchAlbumImages();
+    } else {
+      setLoading(false);
+    }
+  }, [artists]);
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -19,10 +127,10 @@ export function TopArtistsCard({ artists }: { artists: LastfmArtist[] }) {
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                 {index + 1}
               </div>
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={artist.image?.find(i => i.size === "medium")?.["#text"]} />
-                <AvatarFallback>{artist.name[0]?.toUpperCase()}</AvatarFallback>
-              </Avatar>
+              <ArtistAvatar 
+                artist={artist} 
+                albumImage={loading ? undefined : albumImages[artist.name]}
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{artist.name}</p>
                 <p className="text-xs text-muted-foreground">
