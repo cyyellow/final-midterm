@@ -95,10 +95,23 @@ export default async function ProfilePage() {
                     rel="noreferrer"
                     className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background transition-colors border border-transparent hover:border-border"
                   >
-                    <Avatar className="h-10 w-10 rounded-md">
-                      <AvatarImage src={track.image} />
-                      <AvatarFallback><Music className="h-4 w-4" /></AvatarFallback>
-                    </Avatar>
+                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
+                      {track.image ? (
+                        <img
+                          src={track.image}
+                          alt={track.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      {!track.image && (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Music className="h-5 w-5 text-primary/60" />
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 overflow-hidden">
                       <p className="truncate text-sm font-medium">{track.name}</p>
                       <p className="truncate text-xs text-muted-foreground">{track.artist}</p>

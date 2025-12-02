@@ -12,6 +12,7 @@ import {
   LogOut,
   UserPlus,
   MessageSquare,
+  Music,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -43,6 +44,11 @@ const navItems = [
     title: "Chat",
     href: "/chat",
     icon: MessageSquare,
+  },
+  {
+    title: "Playlists",
+    href: "/playlists",
+    icon: Music,
   },
 ];
 

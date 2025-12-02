@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { getPosts } from "@/lib/posts";
+import { getUserPlaylists } from "@/lib/playlist";
 import { FeedPost } from "@/components/feed-post";
+import { SharePlaylistButton } from "@/components/share-playlist-button";
 import { Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -13,22 +15,30 @@ export default async function SocietyPage() {
     redirect("/signin");
   }
 
-  // Fetch posts (Feed)
-  const posts = await getPosts(100, session.user.id);
+  // Fetch posts and playlists
+  const [posts, playlists] = await Promise.all([
+    getPosts(100, session.user.id),
+    getUserPlaylists(session.user.id),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-secondary/10">
       <div className="mx-auto w-full max-w-4xl p-6 space-y-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-primary/10 rounded-full">
-            <Users className="h-6 w-6 text-primary" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-full">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">My Society</h1>
+              <p className="text-muted-foreground text-sm">
+                Updates from your friends and music circle
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">My Society</h1>
-            <p className="text-muted-foreground text-sm">
-              Updates from your friends and music circle
-            </p>
-          </div>
+          {playlists.length > 0 && (
+            <SharePlaylistButton playlists={playlists} />
+          )}
         </div>
 
         {posts.length > 0 ? (

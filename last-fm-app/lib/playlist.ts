@@ -36,6 +36,21 @@ export async function getUserPlaylists(userId: string): Promise<Playlist[]> {
   })) as Playlist[];
 }
 
+export async function getPlaylistById(userId: string, playlistId: string): Promise<Playlist | null> {
+  const collection = await getPlaylistCollection();
+  const playlist = await collection.findOne({ 
+    _id: new ObjectId(playlistId), 
+    userId 
+  });
+  
+  if (!playlist) return null;
+  
+  return {
+    ...playlist,
+    _id: playlist._id.toString(),
+  } as Playlist;
+}
+
 export async function getHomepagePlaylist(userId: string): Promise<Playlist | null> {
   const collection = await getPlaylistCollection();
   

@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Post } from "@/types/post";
-import { Music, Globe, Lock } from "lucide-react";
+import { Music, Globe, Lock, ListMusic } from "lucide-react";
 
 interface FeedPostProps {
   post: Post;
@@ -29,28 +30,54 @@ export function FeedPost({ post }: FeedPostProps) {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
-          {post.track.image ? (
-            <img
-              src={post.track.image}
-              alt={post.track.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Music className="h-8 w-8 text-muted-foreground" />
+      {post.playlistId ? (
+        <Link href={`/playlists/${post.playlistId}`}>
+          <div className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
+              {post.playlistImage ? (
+                <img
+                  src={post.playlistImage}
+                  alt={post.playlistName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <ListMusic className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
             </div>
-          )}
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">Playlist: {post.playlistName}</p>
+              <p className="text-sm text-muted-foreground">
+                {post.playlistTrackCount || 0} tracks
+              </p>
+            </div>
+          </div>
+        </Link>
+      ) : post.track ? (
+        <div className="flex gap-3">
+          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
+            {post.track.image ? (
+              <img
+                src={post.track.image}
+                alt={post.track.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Music className="h-8 w-8 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">{post.track.name}</p>
+            <p className="text-sm text-muted-foreground">{post.track.artist}</p>
+            {post.track.album && (
+              <p className="text-xs text-muted-foreground">{post.track.album}</p>
+            )}
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-medium">{post.track.name}</p>
-          <p className="text-sm text-muted-foreground">{post.track.artist}</p>
-          {post.track.album && (
-            <p className="text-xs text-muted-foreground">{post.track.album}</p>
-          )}
-        </div>
-      </div>
+      ) : null}
 
       {post.thoughts && (
         <p className="mt-3 text-sm leading-relaxed">{post.thoughts}</p>

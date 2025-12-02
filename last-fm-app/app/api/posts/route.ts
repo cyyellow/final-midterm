@@ -10,9 +10,15 @@ const createPostSchema = z.object({
     album: z.string().optional(),
     image: z.string().optional(),
     url: z.string().optional(),
-  }),
+  }).optional(),
+  playlistId: z.string().optional(),
+  playlistName: z.string().optional(),
+  playlistImage: z.string().optional(),
+  playlistTrackCount: z.number().optional(),
   thoughts: z.string().min(1).max(200),
   isPublic: z.boolean().optional(),
+}).refine((data) => data.track || data.playlistId, {
+  message: "Either track or playlistId must be provided",
 });
 
 export async function POST(request: Request) {

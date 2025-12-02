@@ -3,6 +3,10 @@ export interface Event {
   creatorId: string;
   creatorUsername: string;
   creatorImage?: string;
+  // Optional external source info (e.g. Bandsintown)
+  source?: string;
+  sourceId?: string;
+  externalUrl?: string;
   title: string;
   description: string;
   location?: string;

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/event-card";
 import { CreateEventDialog } from "@/components/create-event-dialog";
+import { ImportExternalEventsDialog } from "@/components/import-external-events-dialog";
+import { useToast } from "@/components/ui/use-toast";
 import type { Event } from "@/types/event";
 
 type EventsPageClientProps = {
@@ -14,6 +16,44 @@ type EventsPageClientProps = {
 
 export function EventsPageClient({ events, currentUserId }: EventsPageClientProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleImportFromTopArtists = async () => {
+    setIsImporting(true);
+    try {
+      const res = await fetch("/api/events/import-external", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useTopArtists: true }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast({ 
+          title: "Success!", 
+          description: `Imported ${data.imported || 0} events from your top artists` 
+        });
+        window.location.reload();
+      } else {
+        const error = await res.json();
+        toast({ 
+          title: "Import failed", 
+          description: error.error || "Failed to import events",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({ 
+        title: "Import failed", 
+        description: "Failed to import events",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-6 lg:px-10">
@@ -24,10 +64,33 @@ export function EventsPageClient({ events, currentUserId }: EventsPageClientProp
             Discover and join music events, or create your own
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Event
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleImportFromTopArtists}
+            disabled={isImporting}
+          >
+            {isImporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Import from Top Artists
+              </>
+            )}
+          </Button>
+          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            Import Events
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Event
+          </Button>
+        </div>
       </div>
 
       {events.length === 0 ? (
@@ -54,6 +117,13 @@ export function EventsPageClient({ events, currentUserId }: EventsPageClientProp
       <CreateEventDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+        onSuccess={() => {
+          window.location.reload();
+        }}
+      />
+      <ImportExternalEventsDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
         onSuccess={() => {
           window.location.reload();
         }}

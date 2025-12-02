@@ -85,8 +85,8 @@ export function RightSidebarContent({
           </CardHeader>
           <CardContent className="px-3 pb-3">
             <div className="flex gap-2">
-              {nowPlaying.image && nowPlaying.image.length > 0 && (
-                <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md">
+              <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md bg-gradient-to-br from-primary/20 to-primary/5">
+                {nowPlaying.image && nowPlaying.image.length > 0 ? (
                   <Image
                     src={
                       nowPlaying.image.find((img) => img.size === "large")?.["#text"] ||
@@ -96,8 +96,12 @@ export function RightSidebarContent({
                     fill
                     className="object-cover"
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Music2 className="h-6 w-6 text-primary/60" />
+                  </div>
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <h3 className="line-clamp-2 text-xs font-semibold leading-tight">{nowPlaying.name}</h3>
                 <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{nowPlaying.artist["#text"]}</p>

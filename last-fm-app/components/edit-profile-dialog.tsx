@@ -135,10 +135,23 @@ export function EditProfileDialog({ user, currentUserLastfmUsername }: EditProfi
               <div className="space-y-2">
                 {favoriteTracks.map((track, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 rounded-lg border bg-card">
-                    <Avatar className="h-10 w-10 rounded-md">
-                      <AvatarImage src={track.image} />
-                      <AvatarFallback><Music className="h-4 w-4" /></AvatarFallback>
-                    </Avatar>
+                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
+                      {track.image ? (
+                        <img
+                          src={track.image}
+                          alt={track.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      {!track.image && (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Music className="h-5 w-5 text-primary/60" />
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{track.name}</p>
                       <p className="truncate text-xs text-muted-foreground">{track.artist}</p>
@@ -231,12 +244,27 @@ function AddFavoriteTrackDialog({
               </div>
             ) : (
               <div className="space-y-2">
-                {tracks.map((track, i) => (
+                {tracks.map((track, i) => {
+                  const imageUrl = track.image?.find(img => img.size === "medium")?.["#text"];
+                  return (
                   <div key={`${track.url}-${i}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
-                    <Avatar className="h-10 w-10 rounded-md">
-                      <AvatarImage src={track.image?.find(img => img.size === "medium")?.["#text"]} />
-                      <AvatarFallback><Music className="h-4 w-4" /></AvatarFallback>
-                    </Avatar>
+                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={track.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      {!imageUrl && (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Music className="h-5 w-5 text-primary/60" />
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{track.name}</p>
                       <p className="truncate text-xs text-muted-foreground">
@@ -254,7 +282,8 @@ function AddFavoriteTrackDialog({
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
