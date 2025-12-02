@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,7 @@ interface RightSidebarContentProps {
   recentTracks: LastfmTrack[];
   friendStatuses: FriendStatus[];
   playlists: Playlist[];
+  username: string;
 }
 
 function getRelativeTime(uts?: string) {
@@ -38,13 +39,62 @@ function getRelativeTime(uts?: string) {
 }
 
 export function RightSidebarContent({
-  nowPlaying,
-  recentTracks,
+  nowPlaying: initialNowPlaying,
+  recentTracks: initialRecentTracks,
   friendStatuses,
   playlists,
+  username,
 }: RightSidebarContentProps) {
   const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [nowPlaying, setNowPlaying] = useState<LastfmTrack | null>(initialNowPlaying);
+  const [recentTracks, setRecentTracks] = useState<LastfmTrack[]>(initialRecentTracks);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!username) return;
+
+    const fetchNowPlaying = async () => {
+      try {
+        const res = await fetch(`/api/lastfm/recent-tracks?username=${encodeURIComponent(username)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const tracks = data.tracks || [];
+          const currentTrack = tracks[0];
+          const isNowPlaying = currentTrack?.["@attr"]?.nowplaying === "true";
+          
+          setNowPlaying(isNowPlaying ? currentTrack : null);
+          setRecentTracks(tracks);
+        }
+      } catch (error) {
+        console.error("Failed to fetch now playing:", error);
+      }
+    };
+
+    // Initial fetch after component mounts
+    fetchNowPlaying();
+
+    // Poll for updates every 30 seconds
+    pollingIntervalRef.current = setInterval(() => {
+      fetchNowPlaying();
+    }, 30000);
+
+    // Refresh when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchNowPlaying();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [username]);
 
   const handleRecordClick = (track: LastfmTrack) => {
     setSelectedTrack(track);

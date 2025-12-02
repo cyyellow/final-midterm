@@ -61,22 +61,35 @@ cp .env.example .env
 
 Update the variables in `.env`:
 
-```
+```env
+# Database Configuration
+MONGODB_URI=mongodb+srv://...              # MongoDB connection string
+MONGODB_DB=lastfm-app                      # Database name (default: lastfm-app)
+
+# NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000        # your local dev URL or deployed domain
 NEXTAUTH_SECRET=replace-with-strong-secret # generate via `openssl rand -base64 32`
-LASTFM_API_KEY=your-lastfm-api-key         # from Last.fm dashboard
-LASTFM_API_SECRET=your-lastfm-api-secret   # from Last.fm dashboard
-NEXTAUTH_DEBUG=true                        # optional: verbose auth logs in development
-MONGODB_URI=mongodb+srv://...              # MongoDB connection string
-MONGODB_DB=nextfm                          # Optional: override database name
+NEXTAUTH_DEBUG=false                       # optional: set to "true" for verbose auth logs in development
 
-# Pusher (optional, for real-time chat)
-PUSHER_APP_ID=your-pusher-app-id           # from Pusher dashboard
+# Last.fm API Configuration
+LASTFM_API_KEY=your-lastfm-api-key         # from https://www.last.fm/api/account/create
+LASTFM_API_SECRET=your-lastfm-api-secret   # from Last.fm dashboard
+
+# Cloudinary Configuration (Required for profile image uploads)
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name  # from https://cloudinary.com/console
+CLOUDINARY_API_KEY=your_cloudinary_api_key        # from Cloudinary dashboard
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret  # from Cloudinary dashboard
+
+# Pusher Configuration (Optional - for real-time features like chat)
+PUSHER_APP_ID=your-pusher-app-id           # from https://dashboard.pusher.com/
 PUSHER_KEY=your-pusher-key                 # from Pusher dashboard
 PUSHER_SECRET=your-pusher-secret           # from Pusher dashboard
 PUSHER_CLUSTER=ap3                         # your Pusher cluster (e.g., ap3, us2, eu)
 NEXT_PUBLIC_PUSHER_KEY=your-pusher-key     # same as PUSHER_KEY (for client-side)
 NEXT_PUBLIC_PUSHER_CLUSTER=ap3             # same as PUSHER_CLUSTER (for client-side)
+
+# Bandsintown API (Optional - for event imports)
+BANDSINTOWN_APP_ID=your_bandsintown_app_id # from https://www.bandsintown.com/api
 ```
 
 > **Tip:** When deploying to Vercel, set the same variables in the project’s Environment Variables tab. `NEXTAUTH_URL` should point to the production domain (e.g. `https://nextfm.vercel.app`).

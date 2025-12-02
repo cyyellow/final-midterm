@@ -23,6 +23,7 @@ interface MobileMusicSheetProps {
       artist: string;
     };
   }>;
+  username: string;
 }
 
 export function MobileMusicSheet({
@@ -31,6 +32,7 @@ export function MobileMusicSheet({
   nowPlaying,
   recentTracks,
   friendStatuses,
+  username,
 }: MobileMusicSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -43,6 +45,8 @@ export function MobileMusicSheet({
             nowPlaying={nowPlaying}
             recentTracks={recentTracks}
             friendStatuses={friendStatuses}
+            username={username}
+            playlists={[]}
           />
         </div>
       </SheetContent>

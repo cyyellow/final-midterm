@@ -56,7 +56,7 @@ export default async function ProfilePage() {
                   {user?.displayName || user?.username || "Anonymous"}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  @{user?.lastfmUsername || session.user.lastfmUsername}
+                  @{user?.username || "user"}
                 </p>
                 {user?.bio && (
                   <p className="mt-2 text-sm max-w-md">

@@ -18,6 +18,7 @@ interface ResponsiveLayoutWrapperProps {
       artist: string;
     };
   }>;
+  username: string;
 }
 
 export function ResponsiveLayoutWrapper({
@@ -25,6 +26,7 @@ export function ResponsiveLayoutWrapper({
   nowPlaying,
   recentTracks,
   friendStatuses,
+  username,
 }: ResponsiveLayoutWrapperProps) {
   const [isMusicSheetOpen, setIsMusicSheetOpen] = useState(false);
 
@@ -38,6 +40,7 @@ export function ResponsiveLayoutWrapper({
         nowPlaying={nowPlaying}
         recentTracks={recentTracks}
         friendStatuses={friendStatuses}
+        username={username}
       />
     </>
   );

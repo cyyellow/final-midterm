@@ -20,6 +20,7 @@ import type { AppUser, FavoriteTrack } from "@/lib/users";
 import type { LastfmTrack } from "@/lib/lastfm";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import { ImageUploadCrop } from "./image-upload-crop";
 
 type EditProfileDialogProps = {
   user: AppUser;
@@ -28,12 +29,31 @@ type EditProfileDialogProps = {
 
 export function EditProfileDialog({ user, currentUserLastfmUsername }: EditProfileDialogProps) {
   const [open, setOpen] = useState(false);
-  const [displayName, setDisplayName] = useState(user.displayName || user.username || "");
+  const [displayName, setDisplayName] = useState(user.displayName || user.username || user.lastfmUsername || "");
   const [bio, setBio] = useState(user.bio || "");
   const [favoriteTracks, setFavoriteTracks] = useState<FavoriteTrack[]>(user.favoriteTracks || []);
+  const [profileImage, setProfileImage] = useState<string | null>(user.image || null);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  const saveImage = async (imageUrl: string) => {
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: imageUrl,
+        }),
+      });
+
+      if (res.ok) {
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Failed to save image:", error);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -45,6 +65,7 @@ export function EditProfileDialog({ user, currentUserLastfmUsername }: EditProfi
           displayName,
           bio,
           favoriteTracks,
+          image: profileImage,
         }),
       });
 
@@ -96,6 +117,19 @@ export function EditProfileDialog({ user, currentUserLastfmUsername }: EditProfi
         </DialogHeader>
         
         <div className="space-y-6 py-4">
+          <div className="space-y-2">
+            <Label>Profile Photo</Label>
+            <ImageUploadCrop
+              currentImage={profileImage}
+              onImageChange={(url) => {
+                setProfileImage(url);
+                if (url) {
+                  saveImage(url);
+                }
+              }}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name</Label>
             <Input 

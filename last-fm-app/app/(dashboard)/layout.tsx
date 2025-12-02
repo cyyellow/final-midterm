@@ -42,6 +42,7 @@ export default async function DashboardLayout({
       nowPlaying={nowPlaying}
       recentTracks={recentTracks}
       friendStatuses={statuses}
+      username={username || ""}
     >
       <div className="flex bg-background text-foreground">
         <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
@@ -55,6 +56,7 @@ export default async function DashboardLayout({
             recentTracks={recentTracks}
             friendStatuses={statuses}
             playlists={playlists}
+            username={username || ""}
           />
         </aside>
       </div>

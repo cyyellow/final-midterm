@@ -67,6 +67,26 @@ export function TopArtistsCard({ artists }: { artists: LastfmArtist[] }) {
     const fetchAlbumImages = async () => {
       const topArtists = artists.slice(0, 5);
       const imageMap: Record<string, string | null> = {};
+      const artistNames = topArtists.map(a => a.name).join(",");
+      const CACHE_KEY = `top_artist_albums_${artistNames}`;
+      const CACHE_DURATION = 3600000; // 1 hour in milliseconds
+
+      // Try to load from cache first
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          const now = Date.now();
+          if (now - timestamp < CACHE_DURATION) {
+            // Use cached data
+            setAlbumImages(data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        // Cache read failed, continue to fetch
+      }
 
       // Fetch album images for all artists in parallel
       await Promise.all(
@@ -100,6 +120,16 @@ export function TopArtistsCard({ artists }: { artists: LastfmArtist[] }) {
           }
         })
       );
+
+      // Save to cache
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          data: imageMap,
+          timestamp: Date.now(),
+        }));
+      } catch (error) {
+        // Cache write failed, ignore
+      }
 
       setAlbumImages(imageMap);
       setLoading(false);
