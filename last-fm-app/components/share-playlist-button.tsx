@@ -89,7 +89,7 @@ export function SharePlaylistButton({ playlists }: SharePlaylistButtonProps) {
         Share Playlist
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Share Playlist</DialogTitle>
             <DialogDescription>

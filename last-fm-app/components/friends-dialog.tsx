@@ -117,7 +117,7 @@ export function FriendsDialog({ open, onOpenChange }: FriendsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{view === "list" ? "Friends" : "Add Friend"}</DialogTitle>
           <DialogDescription>
