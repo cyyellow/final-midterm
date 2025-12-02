@@ -12,6 +12,7 @@ const updateProfileSchema = z.object({
     image: z.string().optional(),
     url: z.string().optional(),
   })).max(5).optional(),
+  image: z.string().url().optional().nullable(),
 });
 
 export async function PUT(request: Request) {

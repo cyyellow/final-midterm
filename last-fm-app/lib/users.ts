@@ -29,7 +29,8 @@ export async function updateUserProfile(
   data: { 
     displayName?: string; 
     bio?: string; 
-    favoriteTracks?: FavoriteTrack[] 
+    favoriteTracks?: FavoriteTrack[];
+    image?: string;
   }
 ) {
   const collection = await getUsersCollection();
