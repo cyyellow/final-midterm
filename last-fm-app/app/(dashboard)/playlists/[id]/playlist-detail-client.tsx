@@ -121,8 +121,11 @@ export function PlaylistDetailClient({ initialPlaylist, username }: PlaylistDeta
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     className="mt-1"
-                    maxLength={50}
+                    maxLength={150}
                   />
+                  <p className="text-xs text-muted-foreground text-right mt-1">
+                    {editName.length}/150
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="edit-description">Description</Label>
@@ -130,9 +133,12 @@ export function PlaylistDetailClient({ initialPlaylist, username }: PlaylistDeta
                     id="edit-description"
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    className="mt-1"
-                    maxLength={200}
+                    className="mt-1 resize-none"
+                    maxLength={5000}
                   />
+                  <p className="text-xs text-muted-foreground text-right mt-1">
+                    {editDescription.length}/5000
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <Button

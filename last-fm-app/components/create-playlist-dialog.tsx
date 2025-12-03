@@ -79,8 +79,11 @@ export function CreatePlaylistDialog() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Chill Vibes"
                 required
-                maxLength={50}
+                maxLength={150}
               />
+              <p className="text-xs text-muted-foreground text-right">
+                {name.length}/150
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
@@ -89,9 +92,12 @@ export function CreatePlaylistDialog() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional description..."
-                maxLength={200}
+                maxLength={5000}
                 className="resize-none"
               />
+              <p className="text-xs text-muted-foreground text-right">
+                {description.length}/5000
+              </p>
             </div>
           </div>
           <DialogFooter>

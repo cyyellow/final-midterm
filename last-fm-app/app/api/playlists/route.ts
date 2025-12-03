@@ -4,8 +4,8 @@ import { getUserPlaylists, createPlaylist } from "@/lib/playlist";
 import { z } from "zod";
 
 const createPlaylistSchema = z.object({
-  name: z.string().min(1).max(50),
-  description: z.string().max(200).optional(),
+  name: z.string().min(1).max(150),
+  description: z.string().max(5000).optional(),
 });
 
 export async function GET() {
