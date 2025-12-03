@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Plus, Trash2, Music, Edit2, Save, X, Upload, Users, Lock, Unlock, Copy, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Music, Edit2, Save, X, Upload, Users, Lock, Unlock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,37 +13,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { AddTracksSection } from "@/components/add-tracks-section";
-import { PlaylistImageUpload } from "@/components/playlist-image-upload";
+import { ImageUploadCrop } from "@/components/image-upload-crop";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import type { Playlist, PlaylistTrack } from "@/lib/playlist";
+import type { Playlist, PlaylistTrack, PlaylistPermission } from "@/lib/playlist";
 import type { LastfmTrack } from "@/lib/lastfm";
 
 type PlaylistDetailClientProps = {
   initialPlaylist: Playlist;
   username: string;
-  isOwner: boolean;
   canEdit: boolean;
-  ownerUsername?: string;
 };
 
-export function PlaylistDetailClient({
-  initialPlaylist,
-  username,
-  isOwner,
-  canEdit,
-  ownerUsername,
-}: PlaylistDetailClientProps) {
+export function PlaylistDetailClient({ initialPlaylist, username, canEdit }: PlaylistDetailClientProps) {
   const [playlist, setPlaylist] = useState<Playlist>(initialPlaylist);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(playlist.name);
   const [editDescription, setEditDescription] = useState(playlist.description || "");
-  const [editImage, setEditImage] = useState<string | null>(playlist.image || null);
-  const [editIsPublic, setEditIsPublic] = useState<boolean>((playlist as any).isPublic ?? false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isCloning, setIsCloning] = useState(false);
-  const [selectedTrackUrls, setSelectedTrackUrls] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
@@ -59,6 +46,7 @@ export function PlaylistDetailClient({
 
   const handleRemoveTrack = async (url: string) => {
     if (!canEdit) return;
+
     try {
       const res = await fetch(`/api/playlists/${playlist._id}/tracks?url=${encodeURIComponent(url)}`, {
         method: "DELETE",
@@ -90,14 +78,8 @@ export function PlaylistDetailClient({
 
   const handleAddTrack = async (track: LastfmTrack) => {
     if (!canEdit) return;
-    try {
-      // Prevent adding duplicates on the client
-      const existing = track.url && playlist.tracks.some((t) => t.url === track.url);
-      if (existing) {
-        toast({ title: "Track already in playlist" });
-        return;
-      }
 
+    try {
       const newTrack = {
         name: track.name,
         artist: track.artist["#text"],
@@ -118,11 +100,14 @@ export function PlaylistDetailClient({
           addedAt: new Date(),
         };
         
-        setPlaylist((prev) => ({
-          ...prev,
-          tracks: [addedTrack, ...prev.tracks],
-        }));
-        hasBeenModified.current = true; // Mark as modified
+        // Avoid duplicates
+        if (!playlist.tracks.some(t => t.url === newTrack.url)) {
+          setPlaylist({
+            ...playlist,
+            tracks: [addedTrack, ...playlist.tracks],
+          });
+          hasBeenModified.current = true; // Mark as modified
+        }
         
         toast({ title: "Added to playlist" });
         router.refresh();
@@ -133,89 +118,6 @@ export function PlaylistDetailClient({
       toast({ title: "Failed to add track", variant: "destructive" });
     }
   };
-
-  const handleToggleTrackSelected = (url?: string) => {
-    if (!url) return;
-    setSelectedTrackUrls((prev) =>
-      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]
-    );
-  };
-
-  const handleBulkRemoveTracks = async () => {
-    if (!canEdit || selectedTrackUrls.length === 0) return;
-
-    try {
-      await Promise.all(
-        selectedTrackUrls.map((url) =>
-          fetch(`/api/playlists/${playlist._id}/tracks?url=${encodeURIComponent(url)}`, {
-            method: "DELETE",
-          })
-        )
-      );
-
-      setPlaylist((prev) => ({
-        ...prev,
-        tracks: prev.tracks.filter((t) => !selectedTrackUrls.includes(t.url || "")),
-      }));
-      setSelectedTrackUrls([]);
-      hasBeenModified.current = true;
-      toast({ title: "Removed selected tracks" });
-      router.refresh();
-    } catch (error) {
-      toast({ title: "Failed to remove tracks", variant: "destructive" });
-    }
-  };
-
-  // Listen for sidebar "playlist-track-added" events so new tracks appear immediately
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const custom = event as CustomEvent<{
-        playlistId: string;
-        track: {
-          name: string;
-          artist: string;
-          album?: string;
-          image?: string;
-          url?: string;
-          addedAt?: string;
-        };
-      }>;
-
-      const detail = custom.detail;
-      if (!detail || detail.playlistId !== playlist._id) return;
-
-      const { track } = detail;
-
-      // Avoid duplicates
-      if (track.url && playlist.tracks.some((t) => t.url === track.url)) {
-        return;
-      }
-
-      const addedTrack: PlaylistTrack = {
-        name: track.name,
-        artist: track.artist,
-        album: track.album,
-        image: track.image,
-        url: track.url,
-        addedAt: track.addedAt ? new Date(track.addedAt) : new Date(),
-      };
-
-      setPlaylist((prev) => ({
-        ...prev,
-        tracks: [addedTrack, ...prev.tracks],
-      }));
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("playlist-track-added", handler as EventListener);
-    }
-
-    return () => {
-      if (typeof window !== "undefined") {
-        window.removeEventListener("playlist-track-added", handler as EventListener);
-      }
-    };
-  }, [playlist._id, playlist.tracks]);
 
   // Detect pathname changes (user navigating away)
   useEffect(() => {
@@ -297,84 +199,16 @@ export function PlaylistDetailClient({
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <Link href="/playlists">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Playlists
-            </Button>
-          </Link>
-
-          {/* Only non-editors (pure viewers) see the copy button */}
-          {!canEdit && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isCloning}
-              onClick={async () => {
-                setIsCloning(true);
-                try {
-                  const res = await fetch(`/api/playlists/${playlist._id}/clone`, {
-                    method: "POST",
-                  });
-
-                  if (res.ok) {
-                    const data = await res.json();
-                    const newId = data.playlist?._id;
-                    if (newId) {
-                      toast({ title: "Playlist copied to your library" });
-                      router.push(`/playlists/${newId}`);
-                    } else {
-                      toast({
-                        title: "Failed to copy playlist",
-                        description: "Invalid response from server",
-                        variant: "destructive",
-                      });
-                    }
-                  } else {
-                    const error = await res.json().catch(() => ({}));
-                    toast({
-                      title: "Failed to copy playlist",
-                      description: error.error || "Something went wrong",
-                      variant: "destructive",
-                    });
-                  }
-                } catch (error) {
-                  toast({
-                    title: "Failed to copy playlist",
-                    variant: "destructive",
-                  });
-                } finally {
-                  setIsCloning(false);
-                }
-              }}
-            >
-              {isCloning ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Copying...
-                </>
-              ) : (
-                <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy to My Playlists
-                </>
-              )}
-            </Button>
-          )}
-        </div>
+        <Link href="/playlists">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Playlists
+          </Button>
+        </Link>
         <div className="flex items-center justify-between">
           <div className="flex-1">
             {isEditing && canEdit ? (
               <div className="space-y-3">
-                <div>
-                  <Label>Playlist Image</Label>
-                  <PlaylistImageUpload
-                    playlistId={playlist._id}
-                    currentImage={editImage}
-                    onImageChange={(url) => setEditImage(url)}
-                  />
-                </div>
                 <div>
                   <Label htmlFor="edit-name">Playlist Name</Label>
                   <Input
@@ -401,147 +235,81 @@ export function PlaylistDetailClient({
                     {editDescription.length}/5000
                   </p>
                 </div>
-                <div>
-                  <Label htmlFor="edit-visibility">Visibility</Label>
-                  <Select
-                    value={editIsPublic ? "public" : "private"}
-                    onValueChange={(value) => setEditIsPublic(value === "public")}
-                  >
-                    <SelectTrigger id="edit-visibility" className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="private">
-                        <div className="flex items-center gap-2">
-                          <Lock className="h-4 w-4" />
-                          Private
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="public">
-                        <div className="flex items-center gap-2">
-                          <Unlock className="h-4 w-4" />
-                          Public
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      setIsSaving(true);
-                      try {
-                        const res = await fetch(`/api/playlists/${playlist._id}`, {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            name: editName.trim(),
-                            description: editDescription.trim() || undefined,
-                            image: editImage || undefined,
-                            isPublic: editIsPublic,
-                          }),
-                        });
+                {canEdit && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        setIsSaving(true);
+                        try {
+                          const res = await fetch(`/api/playlists/${playlist._id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              name: editName.trim(),
+                              description: editDescription.trim() || undefined,
+                            }),
+                          });
 
-                        if (res.ok) {
-                          setPlaylist({
-                            ...playlist,
-                            name: editName.trim(),
-                            description: editDescription.trim() || undefined,
-                            image: editImage || undefined,
-                            isPublic: editIsPublic,
-                          } as Playlist);
-                          setIsEditing(false);
-                          hasBeenModified.current = true; // Mark as modified
-                          initialName.current = editName.trim(); // Update initial name
-                          toast({ title: "Playlist updated" });
-                          router.refresh();
-                        } else {
+                          if (res.ok) {
+                            setPlaylist({
+                              ...playlist,
+                              name: editName.trim(),
+                              description: editDescription.trim() || undefined,
+                            });
+                            setIsEditing(false);
+                            hasBeenModified.current = true; // Mark as modified
+                            initialName.current = editName.trim(); // Update initial name
+                            toast({ title: "Playlist updated" });
+                            router.refresh();
+                          } else {
+                            toast({ title: "Failed to update playlist", variant: "destructive" });
+                          }
+                        } catch (error) {
                           toast({ title: "Failed to update playlist", variant: "destructive" });
                         } finally {
                           setIsSaving(false);
                         }
-                      } catch (error) {
-                        toast({ title: "Failed to update playlist", variant: "destructive" });
-                      } finally {
-                        setIsSaving(false);
-                      }
-                    }}
-                    disabled={isSaving || !editName.trim()}
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    Save
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditName(playlist.name);
-                      setEditDescription(playlist.description || "");
-                      setEditImage(playlist.image || null);
-                      setEditIsPublic((playlist as any).isPublic ?? false);
-                    }}
-                    disabled={isSaving}
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Cancel
-                  </Button>
-                </div>
+                      }}
+                      disabled={isSaving || !editName.trim()}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditName(playlist.name);
+                        setEditDescription(playlist.description || "");
+                      }}
+                      disabled={isSaving}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <>
-                <div className="flex items-start gap-4 mb-4">
-                  {playlist.image ? (
-                    <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-lg border shadow-md">
-                      <Image
-                        src={playlist.image}
-                        alt={playlist.name}
-                        fill
-                        className="object-cover"
-                        sizes="128px"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-lg border bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                      <Music className="h-12 w-12 text-primary/60" />
-                    </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-3xl font-bold">{playlist.name}</h1>
+                  {canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsEditing(true)}
+                      className="h-8 w-8"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <h1 className="text-3xl font-bold truncate">{playlist.name}</h1>
-                      {canEdit && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsEditing(true)}
-                          className="h-8 w-8 shrink-0"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {!isOwner && ownerUsername && (
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
-                          Shared by @{ownerUsername}
-                        </span>
-                      )}
-                      {(playlist as any).isPublic ? (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
-                          <Unlock className="h-3 w-3" />
-                          Public
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
-                          <Lock className="h-3 w-3" />
-                          Private
-                        </span>
-                      )}
-                    </div>
-                    {playlist.description && (
-                      <p className="text-muted-foreground line-clamp-2">{playlist.description}</p>
-                    )}
-                  </div>
                 </div>
+                {playlist.description && (
+                  <p className="text-muted-foreground">{playlist.description}</p>
+                )}
               </>
             )}
           </div>
@@ -566,19 +334,8 @@ export function PlaylistDetailClient({
         {/* Playlist Tracks */}
         <div className={canEdit ? "lg:col-span-3" : "lg:col-span-5"}>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardHeader>
               <CardTitle>{playlist.tracks.length} Tracks</CardTitle>
-              {canEdit && selectedTrackUrls.length > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkRemoveTracks}
-                  className="h-8"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete selected
-                </Button>
-              )}
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[600px] pr-4">
@@ -621,21 +378,14 @@ export function PlaylistDetailClient({
                           )}
                         </div>
                         {canEdit && (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => track.url && handleRemoveTrack(track.url)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                            <Checkbox
-                              checked={track.url ? selectedTrackUrls.includes(track.url) : false}
-                              onCheckedChange={() => handleToggleTrackSelected(track.url)}
-                              className="opacity-0 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity"
-                            />
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => track.url && handleRemoveTrack(track.url)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         )}
                       </div>
                     ))}

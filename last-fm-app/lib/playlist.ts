@@ -26,7 +26,6 @@ export type Playlist = {
   image?: string;
   tracks: PlaylistTrack[];
   isPinned?: boolean;
-  isPublic?: boolean;
   collaborators?: PlaylistCollaborator[];
   createdAt: Date;
   updatedAt: Date;
@@ -49,29 +48,9 @@ export async function getUserPlaylists(userId: string): Promise<Playlist[]> {
 
 export async function getPlaylistById(userId: string, playlistId: string): Promise<Playlist | null> {
   const collection = await getPlaylistCollection();
-  // Allow fetching if user owns it OR if it's public
   const playlist = await collection.findOne({ 
-    _id: new ObjectId(playlistId),
-    $or: [
-      { userId },
-      { isPublic: true }
-    ]
-  });
-  
-  if (!playlist) return null;
-  
-  return {
-    ...playlist,
-    _id: playlist._id.toString(),
-  } as Playlist;
-}
-
-// Get playlist by ID without userId check (for public access)
-export async function getPlaylistByIdPublic(playlistId: string): Promise<Playlist | null> {
-  const collection = await getPlaylistCollection();
-  const playlist = await collection.findOne({ 
-    _id: new ObjectId(playlistId),
-    isPublic: true
+    _id: new ObjectId(playlistId), 
+    userId 
   });
   
   if (!playlist) return null;
@@ -142,12 +121,6 @@ export async function createPlaylist(userId: string, name: string, description?:
 export async function updatePlaylist(userId: string, playlistId: string, updates: Partial<Playlist>) {
   const collection = await getPlaylistCollection();
   
-  // Verify user owns the playlist
-  const playlist = await collection.findOne({ _id: new ObjectId(playlistId), userId });
-  if (!playlist) {
-    throw new Error("Playlist not found or you don't have permission to modify it");
-  }
-  
   if (updates.isPinned) {
     // Unpin others if this one is being pinned
     await collection.updateMany(
@@ -175,48 +148,27 @@ export async function deletePlaylist(userId: string, playlistId: string) {
   return { success: true };
 }
 
-export async function addTrackToPlaylist(
-  userId: string,
-  playlistId: string,
-  track: Omit<PlaylistTrack, "addedAt">
-) {
+export async function addTrackToPlaylist(userId: string, playlistId: string, track: Omit<PlaylistTrack, "addedAt">) {
   const collection = await getPlaylistCollection();
-
-  // Verify user owns the playlist
-  const playlist = await collection.findOne({ _id: new ObjectId(playlistId), userId });
-  if (!playlist) {
-    throw new Error("Playlist not found or you don't have permission to modify it");
-  }
-
-  // Prevent duplicate tracks by URL (if provided)
-  if (track.url && playlist.tracks?.some((t) => t.url === track.url)) {
-    return { success: false, reason: "duplicate" as const };
-  }
-
+  
   await collection.updateOne(
     { _id: new ObjectId(playlistId), userId },
     {
-      $push: {
-        tracks: {
-          ...track,
-          addedAt: new Date(),
-        },
+      $push: { 
+        tracks: { 
+          ...track, 
+          addedAt: new Date() 
+        } 
       },
-      $set: { updatedAt: new Date() },
+      $set: { updatedAt: new Date() }
     }
   );
 
-  return { success: true as const };
+  return { success: true };
 }
 
 export async function removeTrackFromPlaylist(userId: string, playlistId: string, trackUrl: string) {
   const collection = await getPlaylistCollection();
-  
-  // Verify user owns the playlist
-  const playlist = await collection.findOne({ _id: new ObjectId(playlistId), userId });
-  if (!playlist) {
-    throw new Error("Playlist not found or you don't have permission to modify it");
-  }
   
   await collection.updateOne(
     { _id: new ObjectId(playlistId), userId },
