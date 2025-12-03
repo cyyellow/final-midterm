@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Plus, Trash2, Music, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,16 +19,45 @@ import type { Playlist, PlaylistTrack } from "@/lib/playlist";
 import type { LastfmTrack } from "@/lib/lastfm";
 import { useToast } from "@/components/ui/use-toast";
 
+// Dynamically import Select to avoid SSR issues
+const Select = dynamic(
+  () => import("@/components/ui/select").then((mod) => mod.Select),
+  { ssr: false }
+);
+const SelectContent = dynamic(
+  () => import("@/components/ui/select").then((mod) => mod.SelectContent),
+  { ssr: false }
+);
+const SelectItem = dynamic(
+  () => import("@/components/ui/select").then((mod) => mod.SelectItem),
+  { ssr: false }
+);
+const SelectTrigger = dynamic(
+  () => import("@/components/ui/select").then((mod) => mod.SelectTrigger),
+  { ssr: false }
+);
+const SelectValue = dynamic(
+  () => import("@/components/ui/select").then((mod) => mod.SelectValue),
+  { ssr: false }
+);
+
 type MyPlaylistCardProps = {
   initialPlaylist: Playlist | null;
+  allPlaylists?: Playlist[];
   username: string; // Last.fm username for fetching recent tracks
 };
 
-export function MyPlaylistCard({ initialPlaylist, username }: MyPlaylistCardProps) {
+export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }: MyPlaylistCardProps) {
   const [playlist, setPlaylist] = useState<Playlist | null>(initialPlaylist);
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Ensure there is a playlist to add tracks into.
   // If user has no playlist yet, we create a default one on the fly.
@@ -140,6 +170,26 @@ export function MyPlaylistCard({ initialPlaylist, username }: MyPlaylistCardProp
     }
   };
 
+  const handleSwitchPlaylist = async (playlistId: string) => {
+    if (isSwitching || playlistId === playlist?._id) return;
+    
+    setIsSwitching(true);
+    try {
+      const res = await fetch(`/api/playlists/${playlistId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPlaylist(data.playlist);
+        toast({ title: `Switched to "${data.playlist.name}"` });
+      } else {
+        toast({ title: "Failed to load playlist", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Failed to load playlist", variant: "destructive" });
+    } finally {
+      setIsSwitching(false);
+    }
+  };
+
   // Get playlist cover image (use first track's image or a gradient)
   const playlistCover = playlist?.tracks?.[0]?.image;
 
@@ -148,7 +198,7 @@ export function MyPlaylistCard({ initialPlaylist, username }: MyPlaylistCardProp
       <CardHeader 
         className="pb-3 flex-shrink-0"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div 
             className="flex items-center gap-2 flex-1 cursor-pointer hover:bg-muted/50 transition-colors rounded px-2 py-1 -mx-2 -my-1"
             onClick={() => setIsExpanded(!isExpanded)}
@@ -159,6 +209,29 @@ export function MyPlaylistCard({ initialPlaylist, username }: MyPlaylistCardProp
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
+            {isMounted && allPlaylists && allPlaylists.length > 1 && (
+              <Select
+                value={playlist?._id || ""}
+                onValueChange={handleSwitchPlaylist}
+                disabled={isSwitching}
+              >
+                <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectValue placeholder="Switch playlist" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allPlaylists.map((p) => (
+                    <SelectItem key={p._id} value={p._id}>
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{p.name}</span>
+                        {p.isPinned && (
+                          <span className="text-primary text-[10px]">📌</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {!isExpanded && playlist && playlist.tracks.length > 0 && (
               <span className="text-xs text-muted-foreground">
                 {playlist.tracks.length} {playlist.tracks.length === 1 ? 'track' : 'tracks'}

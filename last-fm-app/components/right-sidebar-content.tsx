@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Music2, Send } from "lucide-react";
+import { Music2, Send, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
@@ -18,6 +18,13 @@ import { CreatePostDialog } from "./create-post-dialog";
 import { FriendsWidget } from "./friends-widget";
 import type { FriendStatus } from "./right-status";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSession } from "next-auth/react";
 
 interface RightSidebarContentProps {
   nowPlaying: LastfmTrack | null;
@@ -241,7 +248,8 @@ export function RightSidebarContent({
               <HistoryTracksList 
                 tracks={recentTracks
                   .filter((track) => track["@attr"]?.nowplaying !== "true")
-                  .slice(0, 50)} 
+                  .slice(0, 50)}
+                playlists={playlists}
               />
             </div>
           </ScrollArea>
@@ -320,14 +328,64 @@ function NowPlayingImage({ track }: { track: LastfmTrack }) {
   );
 }
 
-function HistoryTracksList({ tracks }: { tracks: LastfmTrack[] }) {
+function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playlists: Playlist[] }) {
+  const { data: session } = useSession();
   const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [isAddingToPlaylist, setIsAddingToPlaylist] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handlePostClick = (track: LastfmTrack, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedTrack(track);
     setShowCreatePost(true);
+  };
+
+  const handleAddToPlaylist = async (track: LastfmTrack, playlistId: string) => {
+    if (isAddingToPlaylist) return;
+    
+    setIsAddingToPlaylist(playlistId);
+    try {
+      const getBestImage = (images?: Array<{ size: string; "#text": string }>) => {
+        if (!images || images.length === 0) return undefined;
+        const img =
+          images.find((i) => i.size === "extralarge")?.["#text"] ||
+          images.find((i) => i.size === "large")?.["#text"] ||
+          images.find((i) => i.size === "medium")?.["#text"] ||
+          images.find((i) => i.size === "small")?.["#text"] ||
+          images[0]?.["#text"];
+        return img && img.trim() !== "" ? img : undefined;
+      };
+
+      const newTrack = {
+        name: track.name,
+        artist: track.artist?.["#text"] ?? "Unknown Artist",
+        album: track.album?.["#text"],
+        image: getBestImage(track.image),
+        url: track.url || "#",
+      };
+
+      const res = await fetch(`/api/playlists/${playlistId}/tracks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTrack),
+      });
+
+      if (res.ok) {
+        toast({ title: "Added to playlist" });
+      } else {
+        const error = await res.json();
+        if (error.error?.includes("duplicate") || error.error?.includes("already")) {
+          toast({ title: "Track already in playlist", variant: "destructive" });
+        } else {
+          toast({ title: "Failed to add track", variant: "destructive" });
+        }
+      }
+    } catch (error) {
+      toast({ title: "Failed to add track", variant: "destructive" });
+    } finally {
+      setIsAddingToPlaylist(null);
+    }
   };
 
   return (
@@ -358,15 +416,50 @@ function HistoryTracksList({ tracks }: { tracks: LastfmTrack[] }) {
                 </span>
               </div>
             </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 flex-shrink-0 opacity-0 transition-all group-hover:opacity-100"
-              onClick={(e) => handlePostClick(track, e)}
-              title="Post this track"
-            >
-              <Send className="h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6"
+                onClick={(e) => handlePostClick(track, e)}
+                title="Post this track"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </Button>
+              {playlists && playlists.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      title="Add to playlist"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="max-h-[300px] overflow-y-auto">
+                    {playlists.map((playlist) => (
+                      <DropdownMenuItem
+                        key={playlist._id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToPlaylist(track, playlist._id);
+                        }}
+                        disabled={isAddingToPlaylist === playlist._id}
+                      >
+                        {isAddingToPlaylist === playlist._id ? (
+                          <span className="text-xs">Adding...</span>
+                        ) : (
+                          playlist.name
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
         );
       })}

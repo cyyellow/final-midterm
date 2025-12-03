@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import type { Post, Comment } from "@/types/post";
-import { Music, Globe, Lock, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical, Pencil } from "lucide-react";
+import { Music, Globe, Lock, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical } from "lucide-react";
 import { getMusicLink } from "@/lib/music-links";
 import { EditPostDialog } from "./edit-post-dialog";
 
@@ -350,35 +350,41 @@ export function FeedPost({ post }: FeedPostProps) {
                                   {new Date(comment.createdAt).toLocaleDateString()}
                                 </span>
                               </div>
-                              {isCommentOwner && !isEditing && (
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => handleStartEditComment(comment)}
-                                    title="Edit comment"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-destructive"
-                                    onClick={() => handleDeleteComment(comment._id)}
-                                    disabled={isDeleting}
-                                    title="Delete comment"
-                                  >
-                                    {isDeleting ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="h-3 w-3" />
-                                    )}
-                                  </Button>
-                                </div>
+                              {isCommentOwner && editingCommentId !== comment._id && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <MoreVertical className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleStartEditComment(comment)}>
+                                      <Edit2 className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => handleDeleteComment(comment._id)}
+                                      disabled={isDeleting}
+                                    >
+                                      {isDeleting ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               )}
                             </div>
-                            {isEditing ? (
+                            {editingCommentId === comment._id ? (
                               <div className="mt-1 flex gap-2">
                                 <Input
                                   value={editingCommentContent}

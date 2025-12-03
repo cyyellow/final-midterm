@@ -267,3 +267,64 @@ export async function getTopAlbums(artist: string, limit = 1) {
   return data.topalbums?.album ?? [];
 }
 
+export async function getUserListeningStats(username: string, from?: number, to?: number) {
+  // Get all recent tracks for the period
+  const limit = 1000; // Last.fm API max limit per request
+  const data = await fetchLastfm<{
+    recenttracks?: {
+      track?: LastfmTrack[];
+      "@attr"?: {
+        totalPages?: string;
+        page?: string;
+        total?: string;
+        perPage?: string;
+      };
+    };
+  }>({
+    method: "user.getRecentTracks",
+    user: username,
+    limit: limit.toString(),
+    ...(from && { from: from.toString() }),
+    ...(to && { to: to.toString() }),
+  });
+
+  const tracks = data.recenttracks?.track ?? [];
+  const totalPages = parseInt(data.recenttracks?.["@attr"]?.totalPages || "1");
+  
+  // If there are more pages, we'd need to fetch them (for now, we'll use the first page)
+  // For a full recap, you'd want to paginate through all pages
+  
+  return {
+    tracks,
+    totalScrobbles: parseInt(data.recenttracks?.["@attr"]?.total || "0"),
+    totalPages,
+  };
+}
+
+export async function getTopTracks(username: string, limit = 50, period: "7day" | "1month" | "3month" | "6month" | "12month" | "overall" = "overall") {
+  const data = await fetchLastfm<{
+    toptracks?: {
+      track?: Array<{
+        name: string;
+        artist: {
+          "#text": string;
+          mbid?: string;
+        };
+        playcount: string;
+        url: string;
+        image?: Array<{
+          size: string;
+          "#text": string;
+        }>;
+      }>;
+    };
+  }>({
+    method: "user.getTopTracks",
+    user: username,
+    limit: limit.toString(),
+    period,
+  });
+
+  return data.toptracks?.track ?? [];
+}
+

@@ -10,6 +10,11 @@ export type ChatMessage = {
   message: string;
   createdAt: Date | string;
   playlistPreview?: {
+    _id: string;
+    name: string;
+    image?: string | null;
+    trackCount: number;
+  } | {
     playlistId: string;
     playlistName: string;
     playlistImage?: string;
