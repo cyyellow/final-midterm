@@ -6,7 +6,9 @@ import { z } from "zod";
 const updatePlaylistSchema = z.object({
   name: z.string().min(1).max(150).optional(),
   description: z.string().max(5000).optional().nullable(),
+  image: z.string().optional().nullable(),
   isPinned: z.boolean().optional(),
+  isPublic: z.boolean().optional(),
 });
 
 export async function PUT(

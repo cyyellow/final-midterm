@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Music, Plus, Loader2, Pin, PinOff, Trash2, MoreVertical } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -226,8 +227,22 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
           {playlists.map((playlist) => (
             <Card key={playlist._id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Music className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {playlist.image ? (
+                    <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border">
+                      <Image
+                        src={playlist.image}
+                        alt={playlist.name}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <Music className="h-6 w-6 text-primary/60" />
+                    </div>
+                  )}
                   <CardTitle className="text-lg truncate">
                     <Link 
                       href={`/playlists/${playlist._id}`}

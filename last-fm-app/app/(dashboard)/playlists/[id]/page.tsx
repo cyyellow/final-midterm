@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import { getPlaylistById } from "@/lib/playlist";
+import { getUserById } from "@/lib/users";
 import { PlaylistDetailClient } from "./playlist-detail-client";
 
 export default async function PlaylistDetailPage({
@@ -23,10 +24,21 @@ export default async function PlaylistDetailPage({
     redirect("/playlists");
   }
 
+  const isOwner = playlist.userId === session.user.id;
+  
+  // Get owner info if not the owner (to display who shared it)
+  let ownerUsername = "";
+  if (!isOwner) {
+    const owner = await getUserById(playlist.userId);
+    ownerUsername = owner?.username || owner?.displayName || "Unknown";
+  }
+
   return (
     <PlaylistDetailClient 
       initialPlaylist={playlist}
       username={session.user.lastfmUsername || ""}
+      isOwner={isOwner}
+      ownerUsername={!isOwner ? ownerUsername : undefined}
     />
   );
 }
