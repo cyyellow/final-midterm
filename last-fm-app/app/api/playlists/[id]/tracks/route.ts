@@ -24,8 +24,16 @@ export async function POST(
     const { id } = await params;
     const json = await request.json();
     const track = addTrackSchema.parse(json);
-    
-    await addTrackToPlaylist(session.user.id, id, track);
+
+    const result = await addTrackToPlaylist(session.user.id, id, track);
+
+    if (!result.success && result.reason === "duplicate") {
+      return NextResponse.json(
+        { error: "Track already in playlist" },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to add track" }, { status: 500 });

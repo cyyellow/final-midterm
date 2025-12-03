@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Music, Loader2, Search } from "lucide-react";
+import { Music, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,15 @@ function TrackList({ tracks, onAdd }: { tracks: LastfmTrack[]; onAdd: (track: La
       {tracks.map((track, i) => {
         const imageUrl = getBestImage(track.image);
         return (
-          <div key={`${track.url || track.name}-${i}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+          <div
+            key={`${track.url || track.name}-${i}`}
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onAdd(track);
+            }}
+          >
             <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
               {imageUrl ? (
                 <Image
@@ -60,19 +68,6 @@ function TrackList({ tracks, onAdd }: { tracks: LastfmTrack[]; onAdd: (track: La
                 {track.artist["#text"]}
               </p>
             </div>
-            <Button 
-              size="sm" 
-              variant="default"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onAdd(track);
-              }}
-              className="shrink-0 h-8 w-8 p-0 bg-primary hover:bg-primary/90 flex items-center justify-center flex-shrink-0"
-              title="Add to playlist"
-            >
-              <Plus className="h-4 w-4 text-primary-foreground" />
-            </Button>
           </div>
         );
       })}
@@ -185,7 +180,7 @@ export function AddTracksSection({
           </Button>
         )}
         <ScrollArea className="h-[400px]">
-          <div className="pr-2">
+          <div className="pr-2 max-w-md mx-auto w-full">
             {loading && recentTracks.length === 0 ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -210,7 +205,7 @@ export function AddTracksSection({
           </Button>
         </form>
         <ScrollArea className="h-[400px]">
-          <div className="pr-2">
+          <div className="pr-2 max-w-md mx-auto w-full">
             {loading && searchResults.length === 0 ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

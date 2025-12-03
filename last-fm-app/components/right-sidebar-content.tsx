@@ -1,6 +1,7 @@
-"use client";
+ "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +13,12 @@ import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
 import type { Playlist } from "@/lib/playlist";
+import { AddTracksSection } from "./add-tracks-section";
 import { CreatePostDialog } from "./create-post-dialog";
 import { PlaylistsWidget } from "./playlists-widget";
 import { FriendsWidget } from "./friends-widget";
 import type { FriendStatus } from "./right-status";
+import { useToast } from "@/components/ui/use-toast";
 
 interface RightSidebarContentProps {
   nowPlaying: LastfmTrack | null;
@@ -45,11 +48,73 @@ export function RightSidebarContent({
   playlists,
   username,
 }: RightSidebarContentProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { toast } = useToast();
   const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<LastfmTrack | null>(initialNowPlaying);
   const [recentTracks, setRecentTracks] = useState<LastfmTrack[]>(initialRecentTracks);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const playlistMatch = pathname.match(/^\/playlists\/([^\/\?]+)/);
+  const currentPlaylistId = playlistMatch?.[1] || null;
+  const currentPlaylist = currentPlaylistId
+    ? playlists.find((p) => (p as any)._id === currentPlaylistId)
+    : null;
+  const isPlaylistOwner = !!currentPlaylist;
+
+  const getBestImage = (images?: Array<{ size: string; "#text": string }>) => {
+    if (!images || images.length === 0) return undefined;
+    const img =
+      images.find((i) => i.size === "extralarge")?.["#text"] ||
+      images.find((i) => i.size === "large")?.["#text"] ||
+      images.find((i) => i.size === "medium")?.["#text"] ||
+      images.find((i) => i.size === "small")?.["#text"] ||
+      images[0]?.["#text"];
+    return img && img.trim() !== "" ? img : undefined;
+  };
+
+  const handleAddTrackToSidebarPlaylist = async (track: LastfmTrack) => {
+    if (!currentPlaylistId || !isPlaylistOwner) return;
+
+    try {
+      const newTrack = {
+        name: track.name,
+        artist: track.artist["#text"],
+        album: track.album?.["#text"],
+        image: getBestImage(track.image),
+        url: track.url || "#",
+      };
+
+      const res = await fetch(`/api/playlists/${currentPlaylistId}/tracks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTrack),
+      });
+
+      if (res.ok) {
+        // Notify playlist page to update immediately
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("playlist-track-added", {
+              detail: {
+                playlistId: currentPlaylistId,
+                track: { ...newTrack, addedAt: new Date().toISOString() },
+              },
+            })
+          );
+        }
+
+        toast({ title: "Added to playlist" });
+        router.refresh();
+      } else {
+        toast({ title: "Failed to add track", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Failed to add track", variant: "destructive" });
+    }
+  };
 
   useEffect(() => {
     if (!username) return;
@@ -100,6 +165,28 @@ export function RightSidebarContent({
     setSelectedTrack(track);
     setShowCreatePost(true);
   };
+
+  if (currentPlaylistId && isPlaylistOwner && username) {
+    return (
+      <div className="flex h-screen flex-col overflow-hidden">
+        <h2 className="mb-4 text-lg font-semibold">Add Songs</h2>
+        <Card className="flex-shrink-0">
+          <CardHeader className="pb-2 px-3 pt-3">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wide">
+              Add Tracks to Playlist
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-3 pb-3">
+            <AddTracksSection
+              username={username}
+              onAdd={handleAddTrackToSidebarPlaylist}
+              autoLoadRecent={false}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">

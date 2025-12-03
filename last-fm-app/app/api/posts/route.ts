@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { createPost } from "@/lib/posts";
+import { updatePlaylist } from "@/lib/playlist";
 import { z } from "zod";
 
 const createPostSchema = z.object({
@@ -32,6 +33,16 @@ export async function POST(request: Request) {
     const json = await request.json();
     const parsed = createPostSchema.parse(json);
     const { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, isPublic } = parsed;
+
+    // If a playlist is being shared, mark it as public so others can view it
+    if (playlistId) {
+      try {
+        await updatePlaylist(session.user.id, playlistId, { isPublic: true });
+      } catch (error) {
+        // If update fails (e.g., playlist doesn't exist or user doesn't own it), continue anyway
+        console.error("Failed to mark playlist as public:", error);
+      }
+    }
 
     const post = await createPost(
       session.user.id,
