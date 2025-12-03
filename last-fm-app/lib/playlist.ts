@@ -26,6 +26,8 @@ export type Playlist = {
   image?: string;
   tracks: PlaylistTrack[];
   isPinned?: boolean;
+  isPublic?: boolean;
+  allowPublicEdit?: boolean;
   collaborators?: PlaylistCollaborator[];
   createdAt: Date;
   updatedAt: Date;
@@ -109,6 +111,8 @@ export async function createPlaylist(userId: string, name: string, description?:
     image,
     tracks: [],
     isPinned: false,
+    isPublic: false,
+    allowPublicEdit: false,
     collaborators: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -118,10 +122,70 @@ export async function createPlaylist(userId: string, name: string, description?:
   return { ...playlist, _id: result.insertedId.toString() };
 }
 
+export async function copyPlaylist(userId: string, sourcePlaylist: Playlist, newName?: string): Promise<Playlist> {
+  const collection = await getPlaylistCollection();
+  
+  // Generate name: "Copy of [original name]" or use provided name
+  const playlistName = newName || `Copy of ${sourcePlaylist.name}`;
+  
+  const newPlaylist: Omit<Playlist, "_id"> = {
+    userId,
+    name: playlistName,
+    description: sourcePlaylist.description,
+    image: sourcePlaylist.image,
+    tracks: [...sourcePlaylist.tracks], // Copy all tracks
+    isPinned: false,
+    isPublic: false,
+    allowPublicEdit: false,
+    collaborators: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const result = await collection.insertOne(newPlaylist as any);
+  return { ...newPlaylist, _id: result.insertedId.toString() };
+}
+
+export async function checkPlaylistEditPermission(
+  userId: string,
+  playlistId: string
+): Promise<{ canEdit: boolean; isOwner: boolean }> {
+  const collection = await getPlaylistCollection();
+  const playlist = await collection.findOne({ _id: new ObjectId(playlistId) });
+  
+  if (!playlist) {
+    return { canEdit: false, isOwner: false };
+  }
+  
+  const isOwner = playlist.userId === userId;
+  const hasEditPermission =
+    playlist.collaborators?.some(
+      (collab: any) => collab.userId === userId && collab.permission === "edit"
+    ) ?? false;
+  
+  const canEditPublic = playlist.isPublic && playlist.allowPublicEdit;
+  
+  return {
+    canEdit: isOwner || hasEditPermission || canEditPublic,
+    isOwner,
+  };
+}
+
 export async function updatePlaylist(userId: string, playlistId: string, updates: Partial<Playlist>) {
   const collection = await getPlaylistCollection();
   
-  if (updates.isPinned) {
+  // Check permissions
+  const { canEdit, isOwner } = await checkPlaylistEditPermission(userId, playlistId);
+  if (!canEdit) {
+    throw new Error("No permission to edit this playlist");
+  }
+  
+  // Only owner can change isPinned, isPublic, allowPublicEdit
+  if (!isOwner && (updates.isPinned !== undefined || updates.isPublic !== undefined || updates.allowPublicEdit !== undefined)) {
+    throw new Error("Only owner can change these settings");
+  }
+  
+  if (updates.isPinned && isOwner) {
     // Unpin others if this one is being pinned
     await collection.updateMany(
       { userId, _id: { $ne: new ObjectId(playlistId) } },
@@ -130,7 +194,7 @@ export async function updatePlaylist(userId: string, playlistId: string, updates
   }
 
   await collection.updateOne(
-    { _id: new ObjectId(playlistId), userId },
+    { _id: new ObjectId(playlistId) },
     { 
       $set: { 
         ...updates, 
@@ -151,8 +215,20 @@ export async function deletePlaylist(userId: string, playlistId: string) {
 export async function addTrackToPlaylist(userId: string, playlistId: string, track: Omit<PlaylistTrack, "addedAt">) {
   const collection = await getPlaylistCollection();
   
+  // Check permissions
+  const { canEdit } = await checkPlaylistEditPermission(userId, playlistId);
+  if (!canEdit) {
+    return { success: false, reason: "no_permission" };
+  }
+  
+  // Check for duplicates
+  const playlist = await collection.findOne({ _id: new ObjectId(playlistId) });
+  if (playlist && playlist.tracks.some((t: any) => t.url === track.url)) {
+    return { success: false, reason: "duplicate" };
+  }
+  
   await collection.updateOne(
-    { _id: new ObjectId(playlistId), userId },
+    { _id: new ObjectId(playlistId) },
     {
       $push: { 
         tracks: { 
@@ -163,20 +239,26 @@ export async function addTrackToPlaylist(userId: string, playlistId: string, tra
       $set: { updatedAt: new Date() }
     }
   );
-
+  
   return { success: true };
 }
 
-export async function removeTrackFromPlaylist(userId: string, playlistId: string, trackUrl: string) {
+export async function removeTrackFromPlaylist(userId: string, playlistId: string, url: string) {
   const collection = await getPlaylistCollection();
   
+  // Check permissions
+  const { canEdit } = await checkPlaylistEditPermission(userId, playlistId);
+  if (!canEdit) {
+    throw new Error("No permission to edit this playlist");
+  }
+  
   await collection.updateOne(
-    { _id: new ObjectId(playlistId), userId },
+    { _id: new ObjectId(playlistId) },
     {
-      $pull: { tracks: { url: trackUrl } },
+      $pull: { tracks: { url } },
       $set: { updatedAt: new Date() }
     }
   );
-
+  
   return { success: true };
 }

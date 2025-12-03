@@ -192,7 +192,7 @@ export function FriendsPageClient({ initialFriends }: { initialFriends: Friend[]
             <p className="text-sm text-muted-foreground mb-4">
               {searchQuery
                 ? "Try a different search term"
-                : "Add friends to see their music activity"}
+                : "Add friends to connect with them"}
             </p>
             {!searchQuery && (
               <Button onClick={() => setShowAddDialog(true)}>

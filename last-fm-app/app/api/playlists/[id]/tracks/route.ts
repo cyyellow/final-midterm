@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
-import { addTrackToPlaylist, removeTrackFromPlaylist } from "@/lib/playlist";
+import { addTrackToPlaylist, removeTrackFromPlaylist, checkPlaylistEditPermission } from "@/lib/playlist";
 import { z } from "zod";
 
 const addTrackSchema = z.object({
@@ -27,10 +27,22 @@ export async function POST(
 
     const result = await addTrackToPlaylist(session.user.id, id, track);
 
-    if (!result.success && result.reason === "duplicate") {
+    if (!result.success) {
+      if (result.reason === "duplicate") {
+        return NextResponse.json(
+          { error: "Track already in playlist" },
+          { status: 409 }
+        );
+      }
+      if (result.reason === "no_permission") {
+        return NextResponse.json(
+          { error: "No permission to edit this playlist" },
+          { status: 403 }
+        );
+      }
       return NextResponse.json(
-        { error: "Track already in playlist" },
-        { status: 409 }
+        { error: "Failed to add track" },
+        { status: 500 }
       );
     }
 
@@ -60,7 +72,10 @@ export async function DELETE(
 
     await removeTrackFromPlaylist(session.user.id, id, url);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message?.includes("permission")) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     return NextResponse.json({ error: "Failed to remove track" }, { status: 500 });
   }
 }

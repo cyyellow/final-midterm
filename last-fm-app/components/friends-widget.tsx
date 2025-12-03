@@ -72,9 +72,16 @@ export function FriendsWidget({ friendStatuses }: FriendsWidgetProps) {
                         )}
                       </div>
                       {friend.isListening && friend.trackName && (
-                        <p className="truncate text-[10px] text-muted-foreground mt-0.5">
-                          {friend.trackName}
-                        </p>
+                        <div className="mt-0.5">
+                          <p className="truncate text-[10px] text-muted-foreground font-medium">
+                            {friend.trackName}
+                          </p>
+                          {friend.artistName && (
+                            <p className="truncate text-[10px] text-muted-foreground/70">
+                              {friend.artistName}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </Link>

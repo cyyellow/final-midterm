@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Music, MoreVertical, Trash2, Pin, PinOff } from "lucide-react";
+import { Music, MoreVertical, Trash2, Pin, PinOff, Share2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CreatePlaylistDialog } from "./create-playlist-dialog";
+import { SharePlaylistDialog } from "./share-playlist-dialog";
 import type { Playlist } from "@/lib/playlist";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
@@ -19,6 +20,8 @@ import { useRouter } from "next/navigation";
 export function PlaylistsWidget({ playlists }: { playlists: Playlist[] }) {
   const { toast } = useToast();
   const router = useRouter();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 
   const handlePin = async (id: string, currentPinned: boolean) => {
     try {
@@ -94,6 +97,14 @@ export function PlaylistsWidget({ playlists }: { playlists: Playlist[] }) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedPlaylist(playlist);
+                            setShareDialogOpen(true);
+                          }}
+                        >
+                          <Share2 className="mr-2 h-4 w-4" /> Share
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handlePin(playlist._id, !!playlist.isPinned)}>
                           {playlist.isPinned ? (
                             <>
@@ -124,6 +135,13 @@ export function PlaylistsWidget({ playlists }: { playlists: Playlist[] }) {
           )}
         </ScrollArea>
       </CardContent>
+      {selectedPlaylist && (
+        <SharePlaylistDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          playlist={selectedPlaylist}
+        />
+      )}
     </Card>
   );
 }

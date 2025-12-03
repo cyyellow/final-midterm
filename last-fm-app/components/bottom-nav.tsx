@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  CalendarClock,
   Home,
   UserRound,
   UsersRound,
@@ -27,11 +26,6 @@ const navItems = [
     title: "Society",
     href: "/society",
     icon: UsersRound,
-  },
-  {
-    title: "Events",
-    href: "/events",
-    icon: CalendarClock,
   },
 ];
 

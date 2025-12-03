@@ -6,6 +6,12 @@ import { z } from "zod";
 
 const sendMessageSchema = z.object({
   message: z.string().min(1).max(500),
+  playlistPreview: z.object({
+    playlistId: z.string(),
+    playlistName: z.string(),
+    playlistImage: z.string().optional(),
+    trackCount: z.number(),
+  }).optional(),
 });
 
 export async function GET(
@@ -44,14 +50,15 @@ export async function POST(
     }
 
     const json = await request.json();
-    const { message } = sendMessageSchema.parse(json);
+    const { message, playlistPreview } = sendMessageSchema.parse(json);
 
     const chatMessage = await sendPrivateMessage(
       session.user.id,
       session.user.username || "Anonymous",
       session.user.image,
       friendId,
-      message
+      message,
+      playlistPreview
     );
 
     // Trigger Pusher event

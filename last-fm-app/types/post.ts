@@ -1,3 +1,12 @@
+export interface Comment {
+  _id: string;
+  userId: string;
+  username: string;
+  userImage?: string;
+  content: string;
+  createdAt: Date;
+}
+
 export interface Post {
   _id: string;
   userId: string;
@@ -18,6 +27,7 @@ export interface Post {
   createdAt: Date;
   likes?: number;
   isPublic?: boolean;
+  comments?: Comment[];
 }
 
 export interface CreatePostInput {

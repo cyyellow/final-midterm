@@ -1,6 +1,21 @@
 import { clientPromise } from "./mongodb";
-import type { ChatMessage } from "@/types/event";
 import { ObjectId } from "mongodb";
+
+export type ChatMessage = {
+  _id: string;
+  eventId: string; // Reused for chat ID in private chats
+  userId: string;
+  username: string;
+  userImage?: string | null;
+  message: string;
+  createdAt: Date | string;
+  playlistPreview?: {
+    playlistId: string;
+    playlistName: string;
+    playlistImage?: string;
+    trackCount: number;
+  };
+};
 
 export async function getChatMessagesCollection() {
   const client = await clientPromise;
@@ -17,7 +32,13 @@ export async function sendPrivateMessage(
   senderUsername: string,
   senderImage: string | null,
   recipientId: string,
-  message: string
+  message: string,
+  playlistPreview?: {
+    playlistId: string;
+    playlistName: string;
+    playlistImage?: string;
+    trackCount: number;
+  }
 ): Promise<ChatMessage> {
   const messagesCollection = await getChatMessagesCollection();
   const chatId = getPrivateChatId(senderId, recipientId);
@@ -30,6 +51,7 @@ export async function sendPrivateMessage(
     userImage: senderImage || undefined,
     message: message.trim(),
     createdAt: now,
+    playlistPreview,
   };
 
   const result = await messagesCollection.insertOne(chatMessage as any);

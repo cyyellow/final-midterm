@@ -1,6 +1,6 @@
 import { clientPromise } from "./mongodb";
 import { ObjectId } from "mongodb";
-import type { Post, CreatePostInput } from "@/types/post";
+import type { Post, CreatePostInput, Comment } from "@/types/post";
 
 export async function createPost(
   userId: string,
@@ -112,7 +112,158 @@ export async function getPostById(postId: string): Promise<Post | null> {
   return {
     ...post,
     _id: post._id.toString(),
+    createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
   } as Post;
+}
+
+export async function updatePost(
+  postId: string,
+  updates: { thoughts: string; isPublic?: boolean }
+): Promise<Post> {
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  if (!ObjectId.isValid(postId)) {
+    throw new Error("Invalid post ID");
+  }
+
+  const result = await db.collection("posts").findOneAndUpdate(
+    { _id: new ObjectId(postId) },
+    {
+      $set: {
+        thoughts: updates.thoughts,
+        ...(updates.isPublic !== undefined && { isPublic: updates.isPublic }),
+      },
+    },
+    { returnDocument: "after" }
+  );
+
+  if (!result.value) {
+    throw new Error("Post not found");
+  }
+
+  return {
+    ...result.value,
+    _id: result.value._id.toString(),
+    createdAt: result.value.createdAt instanceof Date ? result.value.createdAt : new Date(result.value.createdAt),
+  } as Post;
+}
+
+export async function deletePost(postId: string): Promise<void> {
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  if (!ObjectId.isValid(postId)) {
+    throw new Error("Invalid post ID");
+  }
+
+  // Delete post and all its comments
+  await Promise.all([
+    db.collection("posts").deleteOne({ _id: new ObjectId(postId) }),
+    db.collection("comments").deleteMany({ postId }),
+  ]);
+}
+
+export async function addComment(
+  postId: string,
+  userId: string,
+  username: string,
+  userImage: string | null,
+  content: string
+): Promise<Comment> {
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  if (!ObjectId.isValid(postId)) {
+    throw new Error("Invalid post ID");
+  }
+
+  const comment = {
+    postId,
+    userId,
+    username,
+    userImage: userImage || undefined,
+    content: content.trim(),
+    createdAt: new Date(),
+  };
+
+  const result = await db.collection("comments").insertOne(comment);
+
+  return {
+    ...comment,
+    _id: result.insertedId.toString(),
+    createdAt: comment.createdAt,
+  };
+}
+
+export async function getComments(postId: string): Promise<Comment[]> {
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  if (!ObjectId.isValid(postId)) {
+    return [];
+  }
+
+  const comments = await db
+    .collection("comments")
+    .find({ postId })
+    .sort({ createdAt: 1 })
+    .toArray();
+
+  return comments.map((comment) => ({
+    ...comment,
+    _id: comment._id.toString(),
+    createdAt: comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
+  })) as Comment[];
+}
+
+export async function updateComment(
+  commentId: string,
+  userId: string,
+  content: string
+): Promise<Comment | null> {
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  if (!ObjectId.isValid(commentId)) {
+    return null;
+  }
+
+  const result = await db.collection("comments").findOneAndUpdate(
+    { _id: new ObjectId(commentId), userId },
+    {
+      $set: {
+        content: content.trim(),
+      },
+    },
+    { returnDocument: "after" }
+  );
+
+  if (!result.value) {
+    return null;
+  }
+
+  return {
+    ...result.value,
+    _id: result.value._id.toString(),
+    createdAt: result.value.createdAt instanceof Date ? result.value.createdAt : new Date(result.value.createdAt),
+  } as Comment;
+}
+
+export async function deleteComment(commentId: string, userId: string): Promise<boolean> {
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  if (!ObjectId.isValid(commentId)) {
+    return false;
+  }
+
+  const result = await db.collection("comments").deleteOne({
+    _id: new ObjectId(commentId),
+    userId,
+  });
+
+  return result.deletedCount > 0;
 }
 
 

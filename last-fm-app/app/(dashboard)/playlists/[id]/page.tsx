@@ -29,14 +29,16 @@ export default async function PlaylistDetailPage({
     playlist.collaborators?.some(
       (collab) => collab.userId === currentUserId && collab.permission === "edit"
     ) ?? false;
-
-  const canEdit = isOwner || hasEditPermission;
+  
+  // Allow editing if: owner, collaborator with edit permission, or public playlist with allowPublicEdit
+  const canEdit = isOwner || hasEditPermission || (playlist.isPublic && playlist.allowPublicEdit);
 
   return (
     <PlaylistDetailClient
       initialPlaylist={playlist as Playlist}
       username={session.user.lastfmUsername || ""}
       canEdit={canEdit}
+      isOwner={isOwner}
     />
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
-import { updatePlaylist, deletePlaylist, addTrackToPlaylist, removeTrackFromPlaylist } from "@/lib/playlist";
+import { updatePlaylist, deletePlaylist, checkPlaylistEditPermission } from "@/lib/playlist";
 import { z } from "zod";
 
 const updatePlaylistSchema = z.object({
@@ -9,6 +9,7 @@ const updatePlaylistSchema = z.object({
   image: z.string().optional().nullable(),
   isPinned: z.boolean().optional(),
   isPublic: z.boolean().optional(),
+  allowPublicEdit: z.boolean().optional(),
 });
 
 export async function PUT(
@@ -26,7 +27,10 @@ export async function PUT(
     const validated = updatePlaylistSchema.parse(json);
     await updatePlaylist(session.user.id, id, validated);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message?.includes("permission")) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }

@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import {
-  CalendarClock,
   Home,
   UserRound,
   UsersRound,
@@ -32,11 +31,6 @@ const navItems = [
     title: "My Society",
     href: "/society",
     icon: UsersRound,
-  },
-  {
-    title: "Join Event",
-    href: "/events",
-    icon: CalendarClock,
   },
   {
     title: "Chat",

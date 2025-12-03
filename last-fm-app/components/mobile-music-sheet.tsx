@@ -36,11 +36,8 @@ export function MobileMusicSheet({
 }: MobileMusicSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md p-4">
-        <SheetHeader>
-          <SheetTitle>Your Music</SheetTitle>
-        </SheetHeader>
-        <div className="mt-4 h-[calc(100vh-8rem)] overflow-hidden">
+      <SheetContent side="right" className="w-full sm:max-w-md p-0">
+        <div className="h-full overflow-hidden">
           <RightSidebarContent
             nowPlaying={nowPlaying}
             recentTracks={recentTracks}

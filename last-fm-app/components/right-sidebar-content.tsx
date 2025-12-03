@@ -15,7 +15,6 @@ import type { LastfmTrack } from "@/lib/lastfm";
 import type { Playlist } from "@/lib/playlist";
 import { AddTracksSection } from "./add-tracks-section";
 import { CreatePostDialog } from "./create-post-dialog";
-import { PlaylistsWidget } from "./playlists-widget";
 import { FriendsWidget } from "./friends-widget";
 import type { FriendStatus } from "./right-status";
 import { useToast } from "@/components/ui/use-toast";
@@ -189,8 +188,8 @@ export function RightSidebarContent({
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
-      <h2 className="mb-4 text-lg font-semibold">Your Music</h2>
+    <div className="flex h-screen flex-col overflow-hidden p-4 lg:p-0">
+      <h2 className="mb-4 text-lg font-semibold hidden lg:block">Your Music</h2>
 
       {/* Now Playing */}
       {nowPlaying && (
@@ -231,71 +230,27 @@ export function RightSidebarContent({
         </Card>
       )}
 
-      {/* Listening History - Fixed height for 5 items */}
+      {/* Listening History - Fixed height for 5 items, scrollable for more */}
       <Card className="mb-4 flex flex-col">
         <CardHeader className="pb-2 px-3 pt-3">
           <CardTitle className="text-xs font-semibold uppercase tracking-wide">Listening History</CardTitle>
         </CardHeader>
         <CardContent className="px-0 pb-2">
-          <div className="px-2 space-y-0.5">
-            <HistoryTracksList 
-              tracks={recentTracks
-                .filter((track) => track["@attr"]?.nowplaying !== "true")
-                .slice(0, 5)} 
-            />
-          </div>
+          <ScrollArea className="h-[200px]">
+            <div className="px-2 pr-1 space-y-0.5">
+              <HistoryTracksList 
+                tracks={recentTracks
+                  .filter((track) => track["@attr"]?.nowplaying !== "true")
+                  .slice(0, 50)} 
+              />
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
-
-      {/* Playlists Widget */}
-      <div className="mb-4">
-        <PlaylistsWidget playlists={playlists} />
-      </div>
 
       {/* Friends Widget */}
       <div className="mb-4">
         <FriendsWidget friendStatuses={friendStatuses} />
-      </div>
-
-      <Separator className="mb-4" />
-
-      {/* Friend Activity - Fills remaining space */}
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col pb-4">
-        <h3 className="mb-3 text-sm font-medium text-muted-foreground flex-shrink-0">Friend Activity</h3>
-        <ScrollArea className="flex-1">
-          {friendStatuses.length > 0 ? (
-            <div className="space-y-3 pr-3">
-              {friendStatuses.map((friend) => (
-                <div key={friend.id} className="flex items-start gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={friend.avatarUrl || undefined} alt={friend.username} />
-                    <AvatarFallback>{(friend.displayName || friend.username)[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{friend.displayName || friend.username}</p>
-                    {friend.isListening ? (
-                      <div className="mt-0.5">
-                        <Badge variant="secondary" className="text-xs">
-                          Listening
-                        </Badge>
-                        {friend.trackName && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {friend.trackName}
-                            {friend.artistName && ` • ${friend.artistName}`}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Offline</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No friends online</p>
-          )}
-        </ScrollArea>
       </div>
 
       <CreatePostDialog
@@ -382,10 +337,10 @@ function HistoryTracksList({ tracks }: { tracks: LastfmTrack[] }) {
         return (
           <div
             key={`${track.name}-${index}`}
-            className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
+            className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
           >
             <HistoryTrackImage track={track} />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 pr-1">
               <Link
                 href={track.url}
                 target="_blank"
@@ -394,11 +349,11 @@ function HistoryTracksList({ tracks }: { tracks: LastfmTrack[] }) {
               >
                 {track.name}
               </Link>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <p className="flex-1 truncate text-[11px] text-muted-foreground">
                   {track.artist?.["#text"] ?? "Unknown Artist"}
                 </p>
-                <span className="flex-shrink-0 text-[10px] text-muted-foreground">
+                <span className="flex-shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
                   {isNowPlaying ? "Now" : getRelativeTime(track.date?.uts)}
                 </span>
               </div>

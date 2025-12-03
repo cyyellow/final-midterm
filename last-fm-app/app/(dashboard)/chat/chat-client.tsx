@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, Loader2, Users } from "lucide-react";
+import { MessageSquare, Send, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Event, ChatMessage } from "@/types/event";
+import { PlaylistPreviewCard } from "@/components/playlist-preview-card";
 import { getPusherClient } from "@/lib/pusher-client";
 
 type Friend = {
@@ -16,20 +16,30 @@ type Friend = {
   avatarUrl?: string | null;
 };
 
+type ChatMessage = {
+  _id: string;
+  userId: string;
+  username: string;
+  userImage: string | null;
+  message: string;
+  createdAt: string;
+  playlistPreview?: {
+    playlistId: string;
+    playlistName: string;
+    playlistImage?: string;
+    trackCount: number;
+  };
+};
+
 type ChatPageClientProps = {
-  events: Event[];
+  events: never[];
   friends: Friend[];
   currentUserId: string;
 };
 
-type ChatType = "event" | "private";
-
-export function ChatPageClient({ events, friends, currentUserId }: ChatPageClientProps) {
-  const [selectedChatType, setSelectedChatType] = useState<ChatType | null>(
-    events.length > 0 ? "event" : friends.length > 0 ? "private" : null
-  );
+export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(
-    events.length > 0 ? events[0]._id : friends.length > 0 ? friends[0].id : null
+    friends.length > 0 ? friends[0].id : null
   );
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -37,33 +47,24 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const selectedEvent = selectedChatType === "event" ? events.find((e) => e._id === selectedChatId) : null;
-  const selectedFriend = selectedChatType === "private" ? friends.find((f) => f.id === selectedChatId) : null;
+  const selectedFriend = friends.find((f) => f.id === selectedChatId) || null;
 
   useEffect(() => {
-    if (selectedChatId && selectedChatType) {
+    if (selectedChatId) {
       loadMessages();
       
       const pusher = getPusherClient();
       
       if (pusher) {
-        let channelName = "";
-        let eventName = "new-message";
-
-        if (selectedChatType === "event") {
-          channelName = `event-${selectedChatId}`;
-        } else {
-          // Private chat channel name logic: private-{sortedIds}
-          // But here we listen to a specific channel for this conversation
-          // The backend triggers on `chat-{chatId}`. We need to construct chatId.
-          const sortedIds = [currentUserId, selectedChatId].sort();
-          const chatId = `private-${sortedIds[0]}-${sortedIds[1]}`;
-          channelName = `chat-${chatId}`;
-        }
+        // Private chat channel name logic: private-{sortedIds}
+        // The backend triggers on `chat-{chatId}`. We need to construct chatId.
+        const sortedIds = [currentUserId, selectedChatId].sort();
+        const chatId = `private-${sortedIds[0]}-${sortedIds[1]}`;
+        const channelName = `chat-${chatId}`;
 
         const channel = pusher.subscribe(channelName);
         
-        channel.bind(eventName, (newMessage: ChatMessage) => {
+        channel.bind("new-message", (newMessage: ChatMessage) => {
           setMessages((prev) => {
             if (prev.some((msg) => msg._id === newMessage._id)) {
               return prev;
@@ -82,7 +83,7 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
       const interval = setInterval(loadMessages, 3000);
       return () => clearInterval(interval);
     }
-  }, [selectedChatId, selectedChatType]);
+  }, [selectedChatId, currentUserId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -93,14 +94,10 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
   };
 
   const loadMessages = async () => {
-    if (!selectedChatId || !selectedChatType) return;
+    if (!selectedChatId) return;
     
     try {
-      const url = selectedChatType === "event" 
-        ? `/api/events/${selectedChatId}/chat`
-        : `/api/chat/private/${selectedChatId}`;
-
-      const res = await fetch(url, {
+      const res = await fetch(`/api/chat/private/${selectedChatId}`, {
         cache: "no-store",
       });
       if (res.ok) {
@@ -114,15 +111,11 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageInput.trim() || isSending || !selectedChatId || !selectedChatType) return;
+    if (!messageInput.trim() || isSending || !selectedChatId) return;
 
     setIsSending(true);
     try {
-      const url = selectedChatType === "event"
-        ? `/api/events/${selectedChatId}/chat`
-        : `/api/chat/private/${selectedChatId}`;
-
-      const res = await fetch(url, {
+      const res = await fetch(`/api/chat/private/${selectedChatId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: messageInput.trim() }),
@@ -149,7 +142,7 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
     }).format(date);
   };
 
-  if (events.length === 0 && friends.length === 0) {
+  if (friends.length === 0) {
     return (
       <div className="flex flex-1 flex-col gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-6 lg:px-10">
         <div className="flex items-center justify-between mb-6">
@@ -160,7 +153,7 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
             <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
             <h2 className="text-xl font-semibold text-foreground mb-2">No active chats</h2>
             <p className="text-sm text-muted-foreground">
-              Join an event or add friends to start chatting.
+              Add friends to start chatting.
             </p>
           </div>
         </div>
@@ -176,42 +169,9 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
           <h2 className="font-semibold text-lg">Messages</h2>
         </div>
         <ScrollArea className="flex-1">
-          <div className="p-2 space-y-6">
-            {events.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground px-3 uppercase tracking-wider">
-                  Events
-                </h3>
-                {events.map((event) => (
-                  <button
-                    key={event._id}
-                    onClick={() => {
-                      setSelectedChatType("event");
-                      setSelectedChatId(event._id);
-                    }}
-                    className={`w-full text-left p-3 rounded-lg transition-colors flex items-center gap-3 ${
-                      selectedChatType === "event" && selectedChatId === event._id
-                        ? "bg-primary/10 text-primary"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    <Avatar className="h-10 w-10 border border-border">
-                      <AvatarImage src={event.creatorImage} />
-                      <AvatarFallback>{event.title[0].toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{event.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {event.participants.length} participants
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
+          <div className="p-2 space-y-2">
             {friends.length > 0 && (
-              <div className="space-y-2">
+              <>
                 <h3 className="text-xs font-semibold text-muted-foreground px-3 uppercase tracking-wider">
                   Friends
                 </h3>
@@ -219,11 +179,10 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
                   <button
                     key={friend.id}
                     onClick={() => {
-                      setSelectedChatType("private");
                       setSelectedChatId(friend.id);
                     }}
                     className={`w-full text-left p-3 rounded-lg transition-colors flex items-center gap-3 ${
-                      selectedChatType === "private" && selectedChatId === friend.id
+                      selectedChatId === friend.id
                         ? "bg-primary/10 text-primary"
                         : "hover:bg-muted"
                     }`}
@@ -242,7 +201,7 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
                     </div>
                   </button>
                 ))}
-              </div>
+              </>
             )}
           </div>
         </ScrollArea>
@@ -255,13 +214,8 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
             <div className="p-4 border-b border-border bg-card/50 flex items-center justify-between">
               <div>
                 <h2 className="font-semibold text-lg">
-                  {selectedChatType === "event" ? selectedEvent?.title : (selectedFriend?.displayName || selectedFriend?.username)}
+                  {selectedFriend?.displayName || selectedFriend?.username}
                 </h2>
-                {selectedChatType === "event" && (
-                  <p className="text-sm text-muted-foreground">
-                    {selectedEvent?.description}
-                  </p>
-                )}
               </div>
             </div>
 
@@ -298,14 +252,28 @@ export function ChatPageClient({ events, friends, currentUserId }: ChatPageClien
                             {formatMessageTime(new Date(msg.createdAt))}
                           </span>
                         </div>
-                        <div
-                          className={`px-4 py-2 rounded-2xl text-sm ${
-                            msg.userId === currentUserId
-                              ? "bg-primary text-primary-foreground rounded-tr-none"
-                              : "bg-muted text-foreground rounded-tl-none"
-                          }`}
-                        >
-                          {msg.message}
+                        <div className="space-y-2">
+                          {msg.message && !msg.message.match(/https?:\/\/[^\s]+/g) && (
+                            <div
+                              className={`px-4 py-2 rounded-2xl text-sm ${
+                                msg.userId === currentUserId
+                                  ? "bg-primary text-primary-foreground rounded-tr-none"
+                                  : "bg-muted text-foreground rounded-tl-none"
+                              }`}
+                            >
+                              {msg.message}
+                            </div>
+                          )}
+                          {msg.playlistPreview && (
+                            <div className={msg.userId === currentUserId ? "flex justify-end" : ""}>
+                              <PlaylistPreviewCard
+                                playlistId={msg.playlistPreview.playlistId}
+                                playlistName={msg.playlistPreview.playlistName}
+                                playlistImage={msg.playlistPreview.playlistImage}
+                                trackCount={msg.playlistPreview.trackCount}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
