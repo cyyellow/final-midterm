@@ -30,28 +30,53 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    // Name is optional now, API will generate default name if empty
 
     setLoading(true);
     try {
       const res = await fetch("/api/playlists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ 
+          name: name.trim() || undefined, 
+          description: description.trim() || undefined 
+        }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        setPlaylists([data.playlist, ...playlists]);
-        toast({ title: "Playlist created!" });
-        setShowCreateForm(false);
+        if (!data.playlist || !data.playlist._id) {
+          toast({ 
+            title: "Failed to create playlist", 
+            description: "Invalid response from server",
+            variant: "destructive" 
+          });
+          setLoading(false);
+          return;
+        }
+        // Reset form first
         setName("");
         setDescription("");
-        // Navigate to the new playlist's edit page (same as editing an existing one)
-        router.push(`/playlists/${data.playlist._id}`);
-        router.refresh();
+        setShowCreateForm(false);
+        
+        // Get playlist ID
+        const playlistId = data.playlist._id;
+        
+        // Show toast briefly, then navigate
+        toast({ title: "Playlist created!" });
+        
+        // Use window.location.replace for immediate navigation
+        // This ensures the page fully reloads with the new playlist data
+        setTimeout(() => {
+          window.location.replace(`/playlists/${playlistId}`);
+        }, 300);
       } else {
-        toast({ title: "Failed to create playlist", variant: "destructive" });
+        const errorData = await res.json().catch(() => ({}));
+        toast({ 
+          title: "Failed to create playlist", 
+          description: errorData.error || "Something went wrong",
+          variant: "destructive" 
+        });
       }
     } catch (error) {
       toast({ title: "Failed to create playlist", variant: "destructive" });
@@ -104,13 +129,51 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">My Playlists</h1>
-        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Playlist
+        <Button 
+          onClick={async () => {
+            // Immediately create a new playlist and navigate to edit page
+            setLoading(true);
+            try {
+              const res = await fetch("/api/playlists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({}), // Empty name will trigger auto-generation
+              });
+
+              if (res.ok) {
+                const data = await res.json();
+                if (data.playlist && data.playlist._id) {
+                  // Navigate to edit page with new=true flag
+                  router.push(`/playlists/${data.playlist._id}?new=true`);
+                } else {
+                  toast({ title: "Failed to create playlist", variant: "destructive" });
+                }
+              } else {
+                toast({ title: "Failed to create playlist", variant: "destructive" });
+              }
+            } catch (error) {
+              toast({ title: "Failed to create playlist", variant: "destructive" });
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              New Playlist
+            </>
+          )}
         </Button>
       </div>
 
-      {/* Create Form - Inline */}
+      {/* Create Form - Inline (kept for backward compatibility, but can be removed) */}
       {showCreateForm && (
         <Card className="mb-6">
           <CardHeader>
@@ -124,8 +187,7 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Chill Vibes"
-                  required
+                  placeholder="Leave empty for auto-generated name (playlist1, playlist2, ...)"
                   maxLength={50}
                 />
               </div>
@@ -143,7 +205,7 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
               <div className="flex gap-2">
                 <Button type="submit" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create
+                  Create & Edit
                 </Button>
                 <Button type="button" variant="outline" onClick={() => {
                   setShowCreateForm(false);

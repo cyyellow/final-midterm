@@ -28,22 +28,45 @@ export function CreatePlaylistDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    // Name is optional now, API will generate default name if empty
 
     setLoading(true);
     try {
       const res = await fetch("/api/playlists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ 
+          name: name.trim() || undefined, 
+          description: description.trim() || undefined 
+        }),
       });
 
       if (res.ok) {
-        toast({ title: "Playlist created!" });
+        const data = await res.json();
+        if (!data.playlist || !data.playlist._id) {
+          toast({ 
+            title: "Failed to create playlist", 
+            description: "Invalid response from server",
+            variant: "destructive" 
+          });
+          setLoading(false);
+          return;
+        }
         setOpen(false);
         setName("");
         setDescription("");
-        router.refresh();
+        
+        // Get playlist ID
+        const playlistId = data.playlist._id;
+        
+        // Show toast briefly, then navigate
+        toast({ title: "Playlist created!" });
+        
+        // Use window.location.replace for immediate navigation
+        // This ensures the page fully reloads with the new playlist data
+        setTimeout(() => {
+          window.location.replace(`/playlists/${playlistId}`);
+        }, 300);
       } else {
         toast({ title: "Failed to create playlist", variant: "destructive" });
       }
@@ -62,7 +85,7 @@ export function CreatePlaylistDialog() {
           New
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[637px]">
         <DialogHeader>
           <DialogTitle>Create Playlist</DialogTitle>
           <DialogDescription>
@@ -77,8 +100,7 @@ export function CreatePlaylistDialog() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Chill Vibes"
-                required
+                placeholder="Leave empty for auto-generated name (playlist1, playlist2, ...)"
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground text-right">

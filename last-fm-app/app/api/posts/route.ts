@@ -30,13 +30,14 @@ export async function POST(request: Request) {
     }
 
     const json = await request.json();
-    const { track, thoughts, isPublic } = createPostSchema.parse(json);
+    const parsed = createPostSchema.parse(json);
+    const { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, isPublic } = parsed;
 
     const post = await createPost(
       session.user.id,
       session.user.username || "Anonymous",
       session.user.image,
-      { track, thoughts, isPublic }
+      { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, isPublic }
     );
 
     return NextResponse.json(post, { status: 201 });

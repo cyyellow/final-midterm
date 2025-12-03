@@ -194,7 +194,7 @@ export function ImageUploadCrop({
       </div>
 
       <Dialog open={showCropDialog} onOpenChange={setShowCropDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Crop Your Photo</DialogTitle>
           </DialogHeader>

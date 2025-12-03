@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Post } from "@/types/post";
 import { Music, Globe, Lock, ListMusic } from "lucide-react";
+import { getMusicLink } from "@/lib/music-links";
 
 interface FeedPostProps {
   post: Post;
@@ -55,7 +56,12 @@ export function FeedPost({ post }: FeedPostProps) {
           </div>
         </Link>
       ) : post.track ? (
-        <div className="flex gap-3">
+        <a
+          href={getMusicLink(post.track)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
             {post.track.image ? (
               <img
@@ -76,7 +82,7 @@ export function FeedPost({ post }: FeedPostProps) {
               <p className="text-xs text-muted-foreground">{post.track.album}</p>
             )}
           </div>
-        </div>
+        </a>
       ) : null}
 
       {post.thoughts && (
