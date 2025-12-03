@@ -61,6 +61,23 @@ export async function getPlaylistById(userId: string, playlistId: string): Promi
   } as Playlist;
 }
 
+// Public access: fetch playlist by id without requiring ownership.
+// Use this for read-only views where we still want to restrict edits
+// based on ownership/collaborator permissions on the caller side.
+export async function getPlaylistByIdPublic(playlistId: string): Promise<Playlist | null> {
+  const collection = await getPlaylistCollection();
+  const playlist = await collection.findOne({
+    _id: new ObjectId(playlistId),
+  });
+
+  if (!playlist) return null;
+
+  return {
+    ...playlist,
+    _id: playlist._id.toString(),
+  } as Playlist;
+}
+
 export async function getHomepagePlaylist(userId: string): Promise<Playlist | null> {
   const collection = await getPlaylistCollection();
   
