@@ -263,7 +263,7 @@ function AddTrackDialog({ username, onAdd }: { username: string; onAdd: (track: 
           Add
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Track</DialogTitle>
         </DialogHeader>

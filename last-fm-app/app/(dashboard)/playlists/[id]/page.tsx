@@ -5,10 +5,8 @@ import { PlaylistDetailClient } from "./playlist-detail-client";
 
 export default async function PlaylistDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const session = await getAuthSession();
   

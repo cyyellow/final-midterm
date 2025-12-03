@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Post } from "@/types/post";
-import { getMusicLink } from "@/lib/music-links";
 
 interface PostDetailDialogProps {
   post: Post | null;
@@ -21,7 +20,7 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <Avatar>
@@ -57,21 +56,21 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
               </div>
             )}
             <div className="flex flex-col justify-center">
-              <a
-                href={getMusicLink(post.track)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group"
-              >
-                <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{post.track.name}</h3>
-                <p className="text-lg text-muted-foreground">{post.track.artist}</p>
-                {post.track.album && (
-                  <p className="mt-1 text-sm text-muted-foreground">{post.track.album}</p>
-                )}
-                <p className="mt-2 text-sm text-primary hover:underline">
-                  Listen on YouTube →
-                </p>
-              </a>
+              <h3 className="text-xl font-bold">{post.track.name}</h3>
+              <p className="text-lg text-muted-foreground">{post.track.artist}</p>
+              {post.track.album && (
+                <p className="mt-1 text-sm text-muted-foreground">{post.track.album}</p>
+              )}
+              {post.track.url && (
+                <a
+                  href={post.track.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 text-sm text-primary hover:underline"
+                >
+                  View on Last.fm →
+                </a>
+              )}
             </div>
           </div>
 

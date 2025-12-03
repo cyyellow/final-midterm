@@ -97,7 +97,7 @@ export function AddFriendDialog({ open, onOpenChange, onFriendAdded }: AddFriend
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add Friend</DialogTitle>
           <DialogDescription>

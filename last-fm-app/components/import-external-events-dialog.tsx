@@ -83,7 +83,7 @@ export function ImportExternalEventsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Import External Events</DialogTitle>
           <DialogDescription>

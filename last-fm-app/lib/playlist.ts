@@ -10,23 +10,13 @@ export type PlaylistTrack = {
   addedAt: Date;
 };
 
-export type PlaylistPermission = "view" | "edit";
-
-export type PlaylistCollaborator = {
-  userId: string;
-  permission: PlaylistPermission;
-  addedAt: Date;
-};
-
 export type Playlist = {
   _id: string;
   userId: string;
   name: string;
   description?: string;
-  image?: string;
   tracks: PlaylistTrack[];
   isPinned?: boolean;
-  collaborators?: PlaylistCollaborator[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -82,17 +72,15 @@ export async function getHomepagePlaylist(userId: string): Promise<Playlist | nu
   return { ...random, _id: random._id.toString() } as Playlist;
 }
 
-export async function createPlaylist(userId: string, name: string, description?: string, image?: string) {
+export async function createPlaylist(userId: string, name: string, description?: string) {
   const collection = await getPlaylistCollection();
   
   const playlist: Omit<Playlist, "_id"> = {
     userId,
     name,
     description,
-    image,
     tracks: [],
     isPinned: false,
-    collaborators: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
