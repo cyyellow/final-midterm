@@ -33,36 +33,38 @@ export function TrackGrid({ posts }: TrackGridProps) {
     <>
       <div className="relative">
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
-          {visiblePosts.map((post) => (
-            <button
-              key={post._id}
-              onClick={() => setSelectedPost(post)}
-              className="group flex flex-col gap-2 text-left transition-all hover:scale-105"
-            >
-              <div className="relative aspect-square overflow-hidden rounded-lg bg-muted shadow-md hover:shadow-lg transition-shadow">
-                {post.track.image ? (
-                  <Image
-                    src={post.track.image}
-                    alt={post.track.name}
-                    fill
-                    className="object-cover transition-opacity group-hover:opacity-80"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                    <span className="text-4xl">🎵</span>
-                  </div>
-                )}
-              </div>
-              <div className="px-1">
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {post.track.name}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {post.track.artist}
-                </p>
-              </div>
-            </button>
-          ))}
+          {visiblePosts
+            .filter((post) => post.track) // Only show posts with tracks
+            .map((post) => (
+              <button
+                key={post._id}
+                onClick={() => setSelectedPost(post)}
+                className="group flex flex-col gap-2 text-left transition-all hover:scale-105"
+              >
+                <div className="relative aspect-square overflow-hidden rounded-lg bg-muted shadow-md hover:shadow-lg transition-shadow">
+                  {post.track?.image ? (
+                    <Image
+                      src={post.track.image}
+                      alt={post.track.name}
+                      fill
+                      className="object-cover transition-opacity group-hover:opacity-80"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                      <span className="text-4xl">🎵</span>
+                    </div>
+                  )}
+                </div>
+                <div className="px-1">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {post.track?.name}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {post.track?.artist}
+                  </p>
+                </div>
+              </button>
+            ))}
         </div>
 
         {/* Navigation */}
