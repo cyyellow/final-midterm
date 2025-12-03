@@ -162,23 +162,6 @@ export function AddTracksSection({
       </TabsList>
       
       <TabsContent value="recent" className="mt-4">
-        {!recentLoaded && (
-          <Button 
-            onClick={loadRecentTracks} 
-            variant="outline" 
-            className="w-full mb-4"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Loading...
-              </>
-            ) : (
-              "Load Recent Tracks"
-            )}
-          </Button>
-        )}
         <ScrollArea className="h-[400px]">
           <div className="pr-2 max-w-md mx-auto w-full">
             {loading && recentTracks.length === 0 ? (

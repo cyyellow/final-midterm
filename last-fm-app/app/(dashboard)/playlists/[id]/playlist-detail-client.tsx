@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { AddTracksSection } from "@/components/add-tracks-section";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUploadCrop } from "@/components/image-upload-crop";
 import { SharePlaylistDialog } from "@/components/share-playlist-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +37,7 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
   const [isCopying, setIsCopying] = useState(false);
   const [isPublic, setIsPublic] = useState(playlist.isPublic ?? false);
   const [allowPublicEdit, setAllowPublicEdit] = useState(playlist.allowPublicEdit ?? false);
+  const [selectedTrackUrls, setSelectedTrackUrls] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
@@ -114,6 +115,37 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
       }
     } catch (error) {
       toast({ title: "Failed to add track", variant: "destructive" });
+    }
+  };
+
+  const handleToggleTrackSelected = (url?: string) => {
+    if (!url) return;
+    setSelectedTrackUrls((prev) =>
+      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]
+    );
+  };
+
+  const handleBulkRemoveTracks = async () => {
+    if (!canEdit || selectedTrackUrls.length === 0) return;
+
+    try {
+      await Promise.all(
+        selectedTrackUrls.map((url) =>
+          fetch(`/api/playlists/${playlist._id}/tracks?url=${encodeURIComponent(url)}`, {
+            method: "DELETE",
+          })
+        )
+      );
+
+      setPlaylist((prev) => ({
+        ...prev,
+        tracks: prev.tracks.filter((t) => !selectedTrackUrls.includes(t.url || "")),
+      }));
+      setSelectedTrackUrls([]);
+      toast({ title: "Removed selected tracks" });
+      router.refresh();
+    } catch (error) {
+      toast({ title: "Failed to remove tracks", variant: "destructive" });
     }
   };
 
@@ -340,26 +372,23 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Add Tracks Section - Inline (only for editors) */}
-        {canEdit && (
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add Tracks</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <AddTracksSection username={username} onAdd={handleAddTrack} autoLoadRecent={false} />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Playlist Tracks */}
-        <div className={canEdit ? "lg:col-span-3" : "lg:col-span-5"}>
+        <div>
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle>{playlist.tracks.length} Tracks</CardTitle>
+              {canEdit && selectedTrackUrls.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkRemoveTracks}
+                  className="h-8"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete selected ({selectedTrackUrls.length})
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[600px] pr-4">
@@ -402,14 +431,11 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
                           )}
                         </div>
                         {canEdit && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => track.url && handleRemoveTrack(track.url)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <Checkbox
+                            checked={track.url ? selectedTrackUrls.includes(track.url) : false}
+                            onCheckedChange={() => handleToggleTrackSelected(track.url)}
+                            className="opacity-0 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity"
+                          />
                         )}
                       </div>
                     ))}
@@ -418,7 +444,7 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
                   <div className="flex flex-col items-center justify-center h-full text-center py-12 text-muted-foreground">
                     <Music className="h-12 w-12 mb-4" />
                     <p className="text-sm">No songs in this playlist yet.</p>
-                    <p className="text-xs mt-1">Add tracks using the panel on the left.</p>
+                    <p className="text-xs mt-1">Add tracks using the panel on the right.</p>
                   </div>
                 )}
               </ScrollArea>

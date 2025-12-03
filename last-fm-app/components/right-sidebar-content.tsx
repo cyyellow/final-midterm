@@ -143,12 +143,37 @@ export function RightSidebarContent({
     };
 
     // Initial fetch after component mounts
-    fetchNowPlaying();
-
-    // Poll for updates every 30 seconds
-    pollingIntervalRef.current = setInterval(() => {
-      fetchNowPlaying();
-    }, 30000);
+    fetchNowPlaying().then(() => {
+      // Check if user is currently listening from the fetch result
+      fetch(`/api/lastfm/recent-tracks?username=${encodeURIComponent(username)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const tracks = data.tracks || [];
+          const currentTrack = tracks[0];
+          const isNowPlaying = currentTrack?.["@attr"]?.nowplaying === "true";
+          
+          // Start polling only if user is currently listening
+          if (isNowPlaying) {
+            pollingIntervalRef.current = setInterval(() => {
+              fetchNowPlaying().then(() => {
+                // After fetch, check if still listening and stop polling if not
+                fetch(`/api/lastfm/recent-tracks?username=${encodeURIComponent(username)}`)
+                  .then((res) => res.json())
+                  .then((data) => {
+                    const tracks = data.tracks || [];
+                    const currentTrack = tracks[0];
+                    const isNowPlaying = currentTrack?.["@attr"]?.nowplaying === "true";
+                    // Stop polling if user is not listening
+                    if (!isNowPlaying && pollingIntervalRef.current) {
+                      clearInterval(pollingIntervalRef.current);
+                      pollingIntervalRef.current = null;
+                    }
+                  });
+              });
+            }, 30000);
+          }
+        });
+    });
 
     // Refresh when page becomes visible
     const handleVisibilityChange = () => {
@@ -186,7 +211,7 @@ export function RightSidebarContent({
             <AddTracksSection
               username={username}
               onAdd={handleAddTrackToSidebarPlaylist}
-              autoLoadRecent={false}
+              autoLoadRecent={true}
             />
           </CardContent>
         </Card>
