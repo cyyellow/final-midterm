@@ -4,19 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Music, Plus, Loader2, Pin, PinOff, Trash2, MoreVertical } from "lucide-react";
+import { Music, Plus, Loader2, Pin, PinOff, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import type { Playlist } from "@/lib/playlist";
 
@@ -252,32 +246,30 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
                     </Link>
                   </CardTitle>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handlePin(playlist._id, !!playlist.isPinned)}>
-                      {playlist.isPinned ? (
-                        <>
-                          <PinOff className="mr-2 h-4 w-4" /> Unpin
-                        </>
-                      ) : (
-                        <>
-                          <Pin className="mr-2 h-4 w-4" /> Pin to Home
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => handleDelete(playlist._id)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex flex-col gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handlePin(playlist._id, !!playlist.isPinned)}
+                    title={playlist.isPinned ? "Unpin" : "Pin to Home"}
+                  >
+                    {playlist.isPinned ? (
+                      <PinOff className="h-4 w-4" />
+                    ) : (
+                      <Pin className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => handleDelete(playlist._id)}
+                    title="Delete playlist"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
