@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Music2, Send, Plus } from "lucide-react";
+import { Music2, Send, Plus, MoreVertical } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
@@ -23,6 +23,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "next-auth/react";
 
@@ -197,6 +200,48 @@ export function RightSidebarContent({
     setShowCreatePost(true);
   };
 
+  const handleAddToPlaylistForNowPlaying = async (track: LastfmTrack, playlistId: string) => {
+    try {
+      const getBestImage = (images?: Array<{ size: string; "#text": string }>) => {
+        if (!images || images.length === 0) return undefined;
+        const img =
+          images.find((i) => i.size === "extralarge")?.["#text"] ||
+          images.find((i) => i.size === "large")?.["#text"] ||
+          images.find((i) => i.size === "medium")?.["#text"] ||
+          images.find((i) => i.size === "small")?.["#text"] ||
+          images[0]?.["#text"];
+        return img && img.trim() !== "" ? img : undefined;
+      };
+
+      const newTrack = {
+        name: track.name,
+        artist: track.artist?.["#text"] ?? "Unknown Artist",
+        album: track.album?.["#text"],
+        image: getBestImage(track.image),
+        url: track.url || "#",
+      };
+
+      const res = await fetch(`/api/playlists/${playlistId}/tracks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTrack),
+      });
+
+      if (res.ok) {
+        toast({ title: "Added to playlist" });
+      } else {
+        const error = await res.json().catch(() => ({}));
+        if (error.error === "Track already in playlist") {
+          toast({ title: "Track already in playlist", variant: "destructive" });
+        } else {
+          toast({ title: "Failed to add track", variant: "destructive" });
+        }
+      }
+    } catch (error) {
+      toast({ title: "Failed to add track", variant: "destructive" });
+    }
+  };
+
   if (currentPlaylistId && isPlaylistOwner && username) {
     return (
       <div className="flex h-screen flex-col overflow-hidden">
@@ -234,15 +279,47 @@ export function RightSidebarContent({
                   Now Playing
                 </CardTitle>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() => handleRecordClick(nowPlaying)}
-                title="Record a moment"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    title="More options"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleRecordClick(nowPlaying)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Post this track
+                  </DropdownMenuItem>
+                  {playlists && playlists.length > 0 && (
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add to playlist
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="max-h-[300px] overflow-y-auto">
+                        {playlists.map((playlist) => (
+                          <DropdownMenuItem
+                            key={playlist._id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (nowPlaying) {
+                                handleAddToPlaylistForNowPlaying(nowPlaying, playlist._id);
+                              }
+                            }}
+                          >
+                            {playlist.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardHeader>
           <CardContent className="px-3 pb-3">
@@ -267,9 +344,9 @@ export function RightSidebarContent({
         <CardHeader className="pb-2 px-3 pt-3">
           <CardTitle className="text-xs font-semibold uppercase tracking-wide">Listening History</CardTitle>
         </CardHeader>
-        <CardContent className="px-0 pb-2">
+        <CardContent className="px-0 pb-2 overflow-hidden">
           <ScrollArea className="h-[200px]">
-            <div className="px-2 pr-1 space-y-0.5">
+            <div className="px-2 pr-2 space-y-0.5">
               <HistoryTracksList 
                 tracks={recentTracks
                   .filter((track) => track["@attr"]?.nowplaying !== "true")
@@ -420,10 +497,10 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
         return (
           <div
             key={`${track.name}-${index}`}
-            className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
+            className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50 overflow-hidden"
           >
             <HistoryTrackImage track={track} />
-            <div className="min-w-0 flex-1 pr-1">
+            <div className="min-w-0 flex-1 overflow-hidden pr-1" style={{ maxWidth: 'calc(100% - 70px)' }}>
               <Link
                 href={track.url}
                 target="_blank"
@@ -432,8 +509,8 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
               >
                 {track.name}
               </Link>
-              <div className="flex items-center gap-1.5">
-                <p className="flex-1 truncate text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="flex-1 truncate text-[11px] text-muted-foreground min-w-0">
                   {track.artist?.["#text"] ?? "Unknown Artist"}
                 </p>
                 <span className="flex-shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
@@ -441,49 +518,52 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-6 w-6"
-                onClick={(e) => handlePostClick(track, e)}
-                title="Post this track"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </Button>
-              {playlists && playlists.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      title="Add to playlist"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="max-h-[300px] overflow-y-auto">
-                    {playlists.map((playlist) => (
-                      <DropdownMenuItem
-                        key={playlist._id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToPlaylist(track, playlist._id);
-                        }}
-                        disabled={isAddingToPlaylist === playlist._id}
-                      >
-                        {isAddingToPlaylist === playlist._id ? (
-                          <span className="text-xs">Adding...</span>
-                        ) : (
-                          playlist.name
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    title="More options"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={(e) => handlePostClick(track, e)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Post this track
+                  </DropdownMenuItem>
+                  {playlists && playlists.length > 0 && (
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add to playlist
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="max-h-[300px] overflow-y-auto">
+                        {playlists.map((playlist) => (
+                          <DropdownMenuItem
+                            key={playlist._id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddToPlaylist(track, playlist._id);
+                            }}
+                            disabled={isAddingToPlaylist === playlist._id}
+                          >
+                            {isAddingToPlaylist === playlist._id ? (
+                              <span className="text-xs">Adding...</span>
+                            ) : (
+                              playlist.name
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         );
