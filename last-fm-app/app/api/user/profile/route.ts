@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
-import { updateUserProfile } from "@/lib/users";
+import { updateUserProfile, type FavoriteTrack } from "@/lib/users";
 import { z } from "zod";
 
 const updateProfileSchema = z.object({
@@ -23,7 +23,19 @@ export async function PUT(request: Request) {
 
   try {
     const json = await request.json();
-    const data = updateProfileSchema.parse(json);
+    const parsed = updateProfileSchema.parse(json);
+
+    // Normalize nullable image to match updateUserProfile type (string | undefined)
+    const { image, ...rest } = parsed;
+    const data: {
+      displayName?: string;
+      bio?: string;
+      favoriteTracks?: FavoriteTrack[];
+      image?: string;
+    } = {
+      ...rest,
+      image: image ?? undefined,
+    };
 
     await updateUserProfile(session.user.id, data);
 

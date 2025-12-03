@@ -30,7 +30,7 @@ export async function updateUserProfile(
     displayName?: string; 
     bio?: string; 
     favoriteTracks?: FavoriteTrack[];
-    image?: string;
+    image?: string | null;
   }
 ) {
   const collection = await getUsersCollection();
