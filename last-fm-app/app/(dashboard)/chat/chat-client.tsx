@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, Loader2, ArrowLeft } from "lucide-react";
+import { MessageSquare, Send, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,24 +38,7 @@ type ChatPageClientProps = {
 };
 
 export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) {
-  // On mobile, start with no friend selected (show friends list first)
-  // On desktop, auto-select first friend
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  
-  // Mobile: track if user has selected a friend (hide friends list after selection)
-  const [showChatView, setShowChatView] = useState(false);
-
-  // Auto-select first friend on desktop (lg breakpoint)
-  useEffect(() => {
-    if (friends.length > 0 && !selectedChatId && typeof window !== "undefined") {
-      // Only auto-select on desktop (window width >= 1024px)
-      const isDesktop = window.innerWidth >= 1024;
-      if (isDesktop) {
-        setSelectedChatId(friends[0].id);
-      }
-    }
-  }, [friends, selectedChatId]);
-  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -63,16 +46,33 @@ export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) 
 
   const selectedFriend = friends.find((f) => f.id === selectedChatId) || null;
 
-  // Handle friend selection on mobile
-  const handleSelectFriend = (friendId: string) => {
-    setSelectedChatId(friendId);
-    setShowChatView(true); // Hide friends list on mobile after selection
-  };
+  // Auto-select friend from URL query param if present, otherwise select first friend
+  useEffect(() => {
+    if (friends.length > 0 && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const friendId = params.get("friend");
+      if (friendId && friends.some(f => f.id === friendId)) {
+        setSelectedChatId(friendId);
+      } else if (!selectedChatId) {
+        setSelectedChatId(friends[0].id);
+      }
+    }
+  }, [friends]);
 
-  // Handle back button on mobile
-  const handleBackToFriends = () => {
-    setShowChatView(false);
-  };
+  // Listen for friend selection from right sidebar
+  useEffect(() => {
+    const handleFriendSelected = (e: CustomEvent) => {
+      const friendId = e.detail?.friendId;
+      if (friendId && friends.some(f => f.id === friendId)) {
+        setSelectedChatId(friendId);
+      }
+    };
+
+    window.addEventListener("chat-friend-selected", handleFriendSelected as EventListener);
+    return () => {
+      window.removeEventListener("chat-friend-selected", handleFriendSelected as EventListener);
+    };
+  }, [friends]);
 
   useEffect(() => {
     if (selectedChatId) {
@@ -186,79 +186,23 @@ export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) 
     );
   }
 
-  return (
-    <div className="flex flex-1 h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-b from-background via-background to-secondary/10">
-      {/* Chat List Sidebar - Hidden on mobile after friend selection */}
-      <div className={`w-full sm:w-64 lg:w-80 border-r border-border bg-card/50 flex flex-col ${
-        showChatView ? "hidden lg:flex" : "flex"
-      }`}>
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold text-lg">Messages</h2>
-        </div>
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-2">
-            {friends.length > 0 && (
-              <>
-                <h3 className="text-xs font-semibold text-muted-foreground px-3 uppercase tracking-wider">
-                  Friends
-                </h3>
-                {friends.map((friend) => (
-                  <button
-                    key={friend.id}
-                    onClick={() => {
-                      handleSelectFriend(friend.id);
-                    }}
-                    className={`w-full text-left p-3 rounded-lg transition-colors flex items-center gap-3 ${
-                      selectedChatId === friend.id
-                        ? "bg-primary/10 text-primary"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    <Avatar className="h-10 w-10 border border-border">
-                      <AvatarImage src={friend.avatarUrl || undefined} />
-                      <AvatarFallback>{friend.username[0].toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">
-                        {friend.displayName || friend.username}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        @{friend.username}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-        </ScrollArea>
-      </div>
 
-      {/* Chat Area */}
-      <div className={`flex-1 flex flex-col min-w-0 ${
-        !showChatView && selectedChatId ? "hidden lg:flex" : "flex"
-      }`}>
+  return (
+    <div className="flex flex-1 h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-b from-background via-background to-secondary/10 min-w-0">
+      {/* Chat Area - Full width now */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden w-full">
         {selectedChatId ? (
           <>
             <div className="p-4 border-b border-border bg-card/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {/* Back button for mobile */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleBackToFriends}
-                  className="lg:hidden"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
                 <h2 className="font-semibold text-lg">
                   {selectedFriend?.displayName || selectedFriend?.username}
                 </h2>
               </div>
             </div>
 
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4 max-w-3xl mx-auto">
+            <ScrollArea className="flex-1 p-4 min-h-0">
+              <div className="space-y-4 max-w-3xl mx-auto w-full">
                 {messages.length === 0 ? (
                   <div className="text-center py-10 text-muted-foreground">
                     <p>No messages yet. Start the conversation!</p>
@@ -278,7 +222,7 @@ export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) 
                         </AvatarFallback>
                       </Avatar>
                       <div
-                        className={`flex flex-col max-w-[85%] sm:max-w-[75%] lg:max-w-[70%] ${
+                        className={`flex flex-col max-w-[85%] sm:max-w-[70%] lg:max-w-[60%] ${
                           msg.userId === currentUserId ? "items-end" : "items-start"
                         }`}
                       >
@@ -321,8 +265,8 @@ export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) 
               </div>
             </ScrollArea>
 
-            <div className="p-3 sm:p-4 border-t border-border bg-card/50 shrink-0">
-              <form onSubmit={handleSendMessage} className="flex gap-2 max-w-3xl mx-auto">
+            <div className="p-3 sm:p-4 border-t border-border bg-card/50 shrink-0 min-w-0">
+              <form onSubmit={handleSendMessage} className="flex gap-2 w-full max-w-4xl mx-auto">
                 <Input
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}

@@ -30,12 +30,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "next-auth/react";
 
+type Friend = {
+  id: string;
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+};
+
 interface RightSidebarContentProps {
   nowPlaying: LastfmTrack | null;
   recentTracks: LastfmTrack[];
   friendStatuses: FriendStatus[];
   playlists: Playlist[];
   username: string;
+  friends?: Friend[];
 }
 
 function getRelativeTime(uts?: string) {
@@ -57,9 +65,11 @@ export function RightSidebarContent({
   friendStatuses,
   playlists,
   username,
+  friends = [],
 }: RightSidebarContentProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const isChatPage = pathname === "/chat";
   const { toast } = useToast();
   const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -421,10 +431,58 @@ export function RightSidebarContent({
         </CardContent>
       </Card>
 
-      {/* Friends Widget */}
-      <div className="mb-4">
-        <FriendsWidget friendStatuses={friendStatuses} />
-      </div>
+      {/* Friends Widget - Hidden on chat page */}
+      {!isChatPage && (
+        <div className="mb-4">
+          <FriendsWidget friendStatuses={friendStatuses} />
+        </div>
+      )}
+
+      {/* Chat Friends List - Only shown on chat page */}
+      {isChatPage && friends && friends.length > 0 && (
+        <Card className="mb-4 flex flex-col">
+          <CardHeader className="pb-2 px-3 pt-3">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wide">Messages</CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 pb-2">
+            <ScrollArea className="h-[400px]">
+              <div className="px-2 space-y-1">
+                {friends.map((friend) => (
+                  <button
+                    key={friend.id}
+                    onClick={() => {
+                      // Update URL and trigger chat selection
+                      router.push(`/chat?friend=${friend.id}`);
+                      // Dispatch event to update chat
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(
+                          new CustomEvent("chat-friend-selected", {
+                            detail: { friendId: friend.id },
+                          })
+                        );
+                      }
+                    }}
+                    className="w-full text-left p-3 rounded-lg transition-colors flex items-center gap-3 hover:bg-muted"
+                  >
+                    <Avatar className="h-10 w-10 border border-border">
+                      <AvatarImage src={friend.avatarUrl || undefined} />
+                      <AvatarFallback>{friend.username[0].toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">
+                        {friend.displayName || friend.username}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        @{friend.username}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
       <CreatePostDialog
         open={showCreatePost}

@@ -4,7 +4,7 @@ import { Logo } from "@/components/logo";
 import { LeftNav } from "@/components/left-nav";
 import { RightSidebarContent } from "@/components/right-sidebar-content";
 import { ResponsiveLayoutWrapper } from "@/components/responsive-layout-wrapper";
-import { getFriendStatuses } from "@/lib/friends";
+import { getFriendStatuses, getFriends } from "@/lib/friends";
 import { getAuthSession } from "@/lib/auth";
 import { getNowPlaying, getRecentTracks } from "@/lib/lastfm";
 import { getUserPlaylists } from "@/lib/playlist";
@@ -23,6 +23,10 @@ export default async function DashboardLayout({
   
   const statuses = session?.user?.id
     ? await getFriendStatuses(session.user.id)
+    : [];
+
+  const friends = session?.user?.id
+    ? await getFriends(session.user.id)
     : [];
 
   const playlists = session?.user?.id
@@ -63,6 +67,7 @@ export default async function DashboardLayout({
             friendStatuses={statuses}
             playlists={playlists}
             username={username || ""}
+            friends={friends}
           />
         </aside>
       </div>
