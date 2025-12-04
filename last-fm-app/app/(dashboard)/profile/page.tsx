@@ -40,7 +40,7 @@ export default async function ProfilePage() {
   const weeks = Object.entries(postsByWeek).sort(([a], [b]) => b.localeCompare(a));
 
   return (
-    <div className="flex flex-1 flex-col gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-6 lg:px-10">
+    <div className="flex flex-1 flex-col gap-4 sm:gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-4 sm:p-6 lg:px-10 min-h-0 overflow-y-auto">
       {/* Profile Header */}
       <Card className="border-border/60 bg-card/70 backdrop-blur">
         <CardHeader>

@@ -4,19 +4,15 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Home,
-  UserRound,
   UsersRound,
+  MessageSquare,
+  Music,
   Music2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  {
-    title: "Profile",
-    href: "/profile",
-    icon: UserRound,
-  },
   {
     title: "Home",
     href: "/",
@@ -26,6 +22,16 @@ const navItems = [
     title: "Society",
     href: "/society",
     icon: UsersRound,
+  },
+  {
+    title: "Chat",
+    href: "/chat",
+    icon: MessageSquare,
+  },
+  {
+    title: "Playlists",
+    href: "/playlists",
+    icon: Music,
   },
 ];
 
@@ -37,8 +43,8 @@ export function BottomNav({ onMusicClick }: BottomNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-sidebar-border bg-sidebar lg:hidden">
-      <div className="flex items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-sidebar-border bg-sidebar lg:hidden safe-area-inset-bottom">
+      <div className="relative flex items-center justify-around px-1 sm:px-2 pb-safe">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -62,15 +68,16 @@ export function BottomNav({ onMusicClick }: BottomNavProps) {
             </Link>
           );
         })}
+
+        {/* Floating music button */}
         <button
           onClick={onMusicClick}
-          className="flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="absolute -top-5 left-1/2 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-2 ring-background z-10"
+          aria-label="Open music panel"
         >
-          <Music2 className="h-5 w-5" />
-          <span>Music</span>
+          <Music2 className="h-6 w-6" />
         </button>
       </div>
     </nav>
   );
 }
-

@@ -46,8 +46,8 @@ export default async function DashboardPage() {
   const allPlaylists = allPlaylistsResult.status === "fulfilled" ? allPlaylistsResult.value : [];
 
   return (
-    <div className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-secondary/10">
-      <div className="mx-auto w-full max-w-4xl p-6 space-y-8">
+    <div className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-secondary/10 min-h-0 overflow-hidden">
+      <div className="mx-auto w-full max-w-4xl p-4 sm:p-6 space-y-6 sm:space-y-8 overflow-y-auto">
         
         {/* Top Section: Artists & Playlist */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

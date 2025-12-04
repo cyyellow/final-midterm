@@ -43,14 +43,18 @@ export default async function DashboardLayout({
       recentTracks={recentTracks}
       friendStatuses={statuses}
       username={username || ""}
+      userDisplayName={session?.user?.displayName || session?.user?.username || session?.user?.lastfmUsername || null}
+      userImage={session?.user?.image || null}
     >
       <div className="flex h-screen bg-background text-foreground overflow-hidden">
         <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
           <Logo className="-ml-2 mb-6" />
           <LeftNav />
         </aside>
-        <main className="flex-1 h-screen overflow-y-auto pb-20 lg:pb-0">
-          {children}
+        <main className="flex-1 h-screen overflow-y-auto overflow-x-hidden pb-20 pt-14 lg:pb-0 lg:pt-0">
+          <div className="min-h-full w-full max-w-full">
+            {children}
+          </div>
         </main>
         <aside className="sticky top-0 hidden h-screen w-80 shrink-0 border-l border-sidebar-border bg-sidebar/60 p-4 xl:block">
           <RightSidebarContent

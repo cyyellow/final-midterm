@@ -213,7 +213,7 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
                 onValueChange={handleSwitchPlaylist}
                 disabled={isSwitching}
               >
-                <SelectTrigger className="h-8 w-[140px] text-xs">
+                <SelectTrigger className="h-8 w-[120px] sm:w-[140px] text-xs">
                   <SelectValue placeholder="Switch playlist" />
                 </SelectTrigger>
                 <SelectContent>

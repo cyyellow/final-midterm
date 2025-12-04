@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import type { Post, Comment } from "@/types/post";
-import { Music, Globe, Lock, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical, Play } from "lucide-react";
+import { Music, Globe, Lock, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical, Play, Heart } from "lucide-react";
 import { TrackLink } from "@/components/track-link";
 import { EditPostDialog } from "./edit-post-dialog";
 
@@ -39,8 +39,18 @@ export function FeedPost({ post }: FeedPostProps) {
   const [editingCommentContent, setEditingCommentContent] = useState("");
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
   const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null);
+  const [likes, setLikes] = useState<number>(currentPost.likes || 0);
+  const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [isLiking, setIsLiking] = useState(false);
 
   const isOwner = session?.user?.id === post.userId;
+
+  // Check if current user has liked this post
+  useEffect(() => {
+    if (session?.user?.id && currentPost.likedBy) {
+      setIsLiked(currentPost.likedBy.includes(session.user.id));
+    }
+  }, [session?.user?.id, currentPost.likedBy]);
 
   useEffect(() => {
     const loadComments = async () => {
@@ -79,10 +89,13 @@ export function FeedPost({ post }: FeedPostProps) {
         const data = await res.json();
         setComments([...comments, data]);
         setCommentInput("");
+        setCommentsLoaded(true); // Mark as loaded after adding comment
         toast({ title: "Comment added" });
       } else {
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
         toast({
           title: "Failed to add comment",
+          description: errorData.error || "Something went wrong",
           variant: "destructive",
         });
       }
@@ -200,9 +213,39 @@ export function FeedPost({ post }: FeedPostProps) {
     }
   };
 
+  const handleLike = async () => {
+    if (!session?.user?.id || isLiking) return;
+
+    setIsLiking(true);
+    try {
+      const res = await fetch(`/api/posts/${post._id}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setLikes(data.likes || 0);
+        setIsLiked(data.isLiked || false);
+      } else {
+        toast({
+          title: "Failed to like post",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to like post",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
   return (
     <>
-    <div className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-lg border bg-card p-3 sm:p-4 shadow-sm transition-shadow hover:shadow-md w-full max-w-full overflow-hidden">
       <div className="mb-3 flex items-start gap-3">
         <Avatar className="h-10 w-10">
             <AvatarImage src={currentPost.userImage} />
@@ -317,8 +360,18 @@ export function FeedPost({ post }: FeedPostProps) {
           <p className="mt-3 text-sm leading-relaxed">{currentPost.thoughts}</p>
         )}
 
-        {/* Comments Section */}
-        <div className="mt-4 border-t pt-3">
+        {/* Like and Comment Actions */}
+        <div className="mt-4 border-t pt-3 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-2"
+            onClick={handleLike}
+            disabled={!session?.user?.id || isLiking}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
+            <span className="text-xs">{likes}</span>
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -326,11 +379,14 @@ export function FeedPost({ post }: FeedPostProps) {
             onClick={() => setShowComments(!showComments)}
           >
             <MessageSquare className="h-4 w-4" />
-            <span className="text-xs">
-              {comments.length > 0 ? `${comments.length} comment${comments.length > 1 ? "s" : ""}` : "Comment"}
-            </span>
+            {comments.length > 0 && (
+              <span className="text-xs">{comments.length}</span>
+            )}
           </Button>
+        </div>
 
+        {/* Comments Section */}
+        <div className="mt-3">
           {showComments && (
             <div className="mt-3 space-y-3">
               <ScrollArea className="max-h-[300px]">
@@ -434,19 +490,25 @@ export function FeedPost({ post }: FeedPostProps) {
               </ScrollArea>
 
               {session?.user && (
-                <form onSubmit={handleAddComment} className="flex gap-2">
+                <form onSubmit={handleAddComment} className="flex gap-2 mt-3 relative z-10">
                   <Textarea
                     value={commentInput}
                     onChange={(e) => setCommentInput(e.target.value)}
                     placeholder="Write a comment..."
-                    className="min-h-[60px] text-sm resize-none"
+                    className="min-h-[60px] text-sm resize-none flex-1 min-w-0"
                     maxLength={500}
+                    onFocus={(e) => {
+                      // Ensure textarea is visible on mobile
+                      setTimeout(() => {
+                        e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }, 300);
+                    }}
                   />
                   <Button
                     type="submit"
                     size="icon"
                     disabled={!commentInput.trim() || isSubmittingComment}
-                    className="h-[60px] w-[60px] shrink-0"
+                    className="h-[60px] w-[60px] shrink-0 flex-shrink-0"
                   >
                     {isSubmittingComment ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

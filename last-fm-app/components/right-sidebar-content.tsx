@@ -582,12 +582,12 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
                   artist: track.artist?.["#text"] ?? "Unknown Artist",
                   url: track.url,
                 }}
-                className="block truncate text-xs font-medium text-foreground hover:underline max-w-[160px]"
+                className="block truncate text-xs font-medium text-foreground hover:underline max-w-[140px] sm:max-w-[160px]"
               >
                 {track.name}
               </TrackLink>
               <div className="flex items-center gap-1.5">
-                <p className="flex-1 truncate text-[11px] text-muted-foreground max-w-[160px]">
+                <p className="flex-1 truncate text-[11px] text-muted-foreground max-w-[140px] sm:max-w-[160px]">
                   {track.artist?.["#text"] ?? "Unknown Artist"}
                 </p>
                 <span className="flex-shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
