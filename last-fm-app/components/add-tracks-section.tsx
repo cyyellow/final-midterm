@@ -140,11 +140,17 @@ export function AddTracksSection({
   const handleCustomAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customName || !customArtist) return;
+    
+    // Enforce character limits
+    const trimmedName = customName.trim().slice(0, 150);
+    const trimmedArtist = customArtist.trim().slice(0, 100);
+    
+    if (!trimmedName || !trimmedArtist) return;
 
     const track: LastfmTrack = {
-      name: customName,
+      name: trimmedName,
       url: customUrl || "#",
-      artist: { "#text": customArtist },
+      artist: { "#text": trimmedArtist },
     };
     
     onAdd(track);
@@ -213,8 +219,12 @@ export function AddTracksSection({
               required 
               value={customName} 
               onChange={e => setCustomName(e.target.value)} 
-              placeholder="e.g. Never Gonna Give You Up" 
+              placeholder="e.g. Never Gonna Give You Up"
+              maxLength={150}
             />
+            <p className="text-xs text-muted-foreground">
+              {customName.length}/150
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="artist">Artist</Label>
@@ -223,8 +233,12 @@ export function AddTracksSection({
               required 
               value={customArtist} 
               onChange={e => setCustomArtist(e.target.value)} 
-              placeholder="e.g. Rick Astley" 
+              placeholder="e.g. Rick Astley"
+              maxLength={100}
             />
+            <p className="text-xs text-muted-foreground">
+              {customArtist.length}/100
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="url">Link (Optional)</Label>
