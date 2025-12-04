@@ -24,14 +24,6 @@ export async function POST(
       return NextResponse.json({ error: "Playlist not found" }, { status: 404 });
     }
 
-    // Don't allow copying your own playlist
-    if (sourcePlaylist.userId === session.user.id) {
-      return NextResponse.json(
-        { error: "Cannot copy your own playlist" },
-        { status: 400 }
-      );
-    }
-
     const json = await request.json();
     const { name } = copyPlaylistSchema.parse(json);
 

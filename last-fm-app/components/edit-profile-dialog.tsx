@@ -21,6 +21,7 @@ import type { LastfmTrack } from "@/lib/lastfm";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { ImageUploadCrop } from "./image-upload-crop";
+import { AddTracksSection } from "./add-tracks-section";
 
 type EditProfileDialogProps = {
   user: AppUser;
@@ -235,29 +236,11 @@ function AddFavoriteTrackDialog({
   disabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [tracks, setTracks] = useState<LastfmTrack[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const loadRecentTracks = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/lastfm/recent-tracks?username=${username}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTracks(data.tracks || []);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={(val) => {
       if (!disabled) {
         setOpen(val);
-        if (val) loadRecentTracks();
       }
     }}>
       <DialogTrigger asChild>
@@ -266,62 +249,18 @@ function AddFavoriteTrackDialog({
           Add
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Select from Recent Tracks</DialogTitle>
+          <DialogTitle>Add Favorite Track</DialogTitle>
         </DialogHeader>
-        <div className="mt-4">
-          <ScrollArea className="h-[400px] pr-4">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {tracks.map((track, i) => {
-                  const imageUrl = track.image?.find(img => img.size === "medium")?.["#text"];
-                  return (
-                  <div key={`${track.url}-${i}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
-                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={track.name}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : null}
-                      {!imageUrl && (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Music className="h-5 w-5 text-primary/60" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{track.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {track.artist["#text"]}
-                      </p>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={() => {
-                        onAdd(track);
-                        setOpen(false);
-                      }}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  );
-                })}
-              </div>
-            )}
-          </ScrollArea>
-        </div>
+        <AddTracksSection 
+          username={username} 
+          onAdd={(track) => {
+            onAdd(track);
+            setOpen(false);
+          }}
+          autoLoadRecent={true}
+        />
       </DialogContent>
     </Dialog>
   );

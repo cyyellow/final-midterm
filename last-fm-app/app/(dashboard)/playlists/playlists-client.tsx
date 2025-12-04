@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Music, Plus, Loader2, Pin, Trash2, MoreVertical, Share2 } from "lucide-react";
+import { Music, Plus, Loader2, Pin, Trash2, MoreVertical, Share2, Copy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
   const [loading, setLoading] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [copyingPlaylistId, setCopyingPlaylistId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -126,6 +127,39 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
       }
     } catch (error) {
       toast({ title: "Failed to delete playlist", variant: "destructive" });
+    }
+  };
+
+  const handleCopy = async (id: string) => {
+    if (copyingPlaylistId) return;
+    
+    setCopyingPlaylistId(id);
+    try {
+      const res = await fetch(`/api/playlists/${id}/copy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast({ title: "Playlist copied successfully!" });
+        router.push(`/playlists/${data.playlist._id}`);
+      } else {
+        const error = await res.json();
+        toast({
+          title: "Failed to copy playlist",
+          description: error.error || "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to copy playlist",
+        variant: "destructive",
+      });
+    } finally {
+      setCopyingPlaylistId(null);
     }
   };
 
@@ -278,6 +312,20 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
                       }}
                     >
                       <Share2 className="mr-2 h-4 w-4" /> Share
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleCopy(playlist._id)}
+                      disabled={copyingPlaylistId === playlist._id}
+                    >
+                      {copyingPlaylistId === playlist._id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Copying...
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="mr-2 h-4 w-4" /> Copy
+                        </>
+                      )}
                     </DropdownMenuItem>
                     {!playlist.isPinned && (
                       <DropdownMenuItem onClick={() => handlePin(playlist._id, false)}>

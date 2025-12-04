@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Plus, Trash2, Music, Edit2, Save, X, Upload, Users, Lock, Unlock, Share2, Copy, Globe, Play } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Music, Edit2, Save, X, Upload, Users, Lock, Unlock, Share2, Copy, Globe, Play, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -299,6 +299,50 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
                         className="h-8 w-8"
                       >
                         <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={async () => {
+                          if (isCopying) return;
+                          setIsCopying(true);
+                          try {
+                            const res = await fetch(`/api/playlists/${playlist._id}/copy`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({}),
+                            });
+
+                            if (res.ok) {
+                              const data = await res.json();
+                              toast({ title: "Playlist copied successfully!" });
+                              router.push(`/playlists/${data.playlist._id}`);
+                            } else {
+                              const error = await res.json();
+                              toast({
+                                title: "Failed to copy playlist",
+                                description: error.error || "Something went wrong",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            toast({
+                              title: "Failed to copy playlist",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setIsCopying(false);
+                          }
+                        }}
+                        disabled={isCopying}
+                        className="h-8 w-8"
+                        title="Copy playlist"
+                      >
+                        {isCopying ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
