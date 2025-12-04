@@ -117,7 +117,10 @@ export function RightSidebarContent({
         }
 
         toast({ title: "Added to playlist" });
-        router.refresh();
+        // Use setTimeout to avoid interfering with dialog close animations
+        setTimeout(() => {
+          router.refresh();
+        }, 100);
       } else {
         toast({ title: "Failed to add track", variant: "destructive" });
       }
@@ -129,59 +132,59 @@ export function RightSidebarContent({
   useEffect(() => {
     if (!username) return;
 
+    let isMounted = true;
+
     const fetchNowPlaying = async () => {
       try {
         const res = await fetch(`/api/lastfm/recent-tracks?username=${encodeURIComponent(username)}`);
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const data = await res.json();
           const tracks = data.tracks || [];
           const currentTrack = tracks[0];
           const isNowPlaying = currentTrack?.["@attr"]?.nowplaying === "true";
           
-          setNowPlaying(isNowPlaying ? currentTrack : null);
-          setRecentTracks(tracks);
+          if (isMounted) {
+            setNowPlaying(isNowPlaying ? currentTrack : null);
+            setRecentTracks(tracks);
+          }
+          
+          return { isNowPlaying, tracks };
         }
       } catch (error) {
         console.error("Failed to fetch now playing:", error);
       }
+      return { isNowPlaying: false, tracks: [] };
     };
 
-    // Initial fetch after component mounts
-    fetchNowPlaying().then(() => {
-      // Check if user is currently listening from the fetch result
-      fetch(`/api/lastfm/recent-tracks?username=${encodeURIComponent(username)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          const tracks = data.tracks || [];
-          const currentTrack = tracks[0];
-          const isNowPlaying = currentTrack?.["@attr"]?.nowplaying === "true";
-          
-          // Start polling only if user is currently listening
-          if (isNowPlaying) {
-            pollingIntervalRef.current = setInterval(() => {
-              fetchNowPlaying().then(() => {
-                // After fetch, check if still listening and stop polling if not
-                fetch(`/api/lastfm/recent-tracks?username=${encodeURIComponent(username)}`)
-                  .then((res) => res.json())
-                  .then((data) => {
-                    const tracks = data.tracks || [];
-                    const currentTrack = tracks[0];
-                    const isNowPlaying = currentTrack?.["@attr"]?.nowplaying === "true";
-                    // Stop polling if user is not listening
-                    if (!isNowPlaying && pollingIntervalRef.current) {
-                      clearInterval(pollingIntervalRef.current);
-                      pollingIntervalRef.current = null;
-                    }
-                  });
-              });
-            }, 30000);
+    // Initial fetch
+    fetchNowPlaying().then((result) => {
+      if (!isMounted) return;
+      
+      // Start polling only if user is currently listening
+      if (result.isNowPlaying) {
+        pollingIntervalRef.current = setInterval(async () => {
+          if (!isMounted) {
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+            return;
           }
-        });
+          
+          const result = await fetchNowPlaying();
+          
+          // Stop polling if user is not listening
+          if (!result.isNowPlaying && pollingIntervalRef.current && isMounted) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }, 30000);
+      }
     });
 
     // Refresh when page becomes visible
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
+      if (!document.hidden && isMounted) {
         fetchNowPlaying();
       }
     };
@@ -189,8 +192,10 @@ export function RightSidebarContent({
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      isMounted = false;
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
