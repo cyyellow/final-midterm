@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Music, Plus, Loader2, Pin, PinOff, Trash2, MoreVertical, Share2 } from "lucide-react";
+import { Music, Plus, Loader2, Pin, Trash2, MoreVertical, Share2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -234,21 +234,27 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {playlist.image ? (
-                    <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border">
-                      <Image
-                        src={playlist.image}
-                        alt={playlist.name}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                      <Music className="h-6 w-6 text-primary/60" />
-                    </div>
-                  )}
+                  {(() => {
+                    // Use playlist.image if available, otherwise find first track with non-placeholder image
+                    const playlistImage = playlist.image || 
+                      playlist.tracks.find(track => track.image && track.image.trim() !== "")?.image;
+                    
+                    return playlistImage ? (
+                      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border bg-muted">
+                        <Image
+                          src={playlistImage}
+                          alt={playlist.name}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border bg-muted flex items-center justify-center">
+                        <Music className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    );
+                  })()}
                   <CardTitle className="text-lg truncate">
                     <Link 
                       href={`/playlists/${playlist._id}`}
@@ -273,17 +279,11 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
                     >
                       <Share2 className="mr-2 h-4 w-4" /> Share
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handlePin(playlist._id, !!playlist.isPinned)}>
-                      {playlist.isPinned ? (
-                        <>
-                          <PinOff className="mr-2 h-4 w-4" /> Unpin
-                        </>
-                      ) : (
-                        <>
-                          <Pin className="mr-2 h-4 w-4" /> Pin to Home
-                        </>
-                      )}
-                    </DropdownMenuItem>
+                    {!playlist.isPinned && (
+                      <DropdownMenuItem onClick={() => handlePin(playlist._id, false)}>
+                        <Pin className="mr-2 h-4 w-4" /> Pin to Home
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem 
                       className="text-destructive focus:text-destructive"
                       onClick={() => handleDelete(playlist._id)}

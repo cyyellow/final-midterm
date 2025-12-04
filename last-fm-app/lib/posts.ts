@@ -1,6 +1,7 @@
 import { clientPromise } from "./mongodb";
 import { ObjectId } from "mongodb";
 import type { Post, CreatePostInput, Comment } from "@/types/post";
+import { getPlaylistByIdPublic } from "./playlist";
 
 export async function createPost(
   userId: string,
@@ -139,11 +140,35 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
     .limit(limit)
     .toArray();
 
-  return posts.map((post) => ({
-    ...post,
-    _id: post._id.toString(),
-    createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
-  })) as Post[];
+  // Process posts and update playlistImage if needed
+  const processedPosts = await Promise.all(
+    posts.map(async (post) => {
+      // If post has playlistId but no playlistImage (or empty), fetch playlist and get first track's image
+      if (post.playlistId && !post.playlistImage) {
+        try {
+          const playlist = await getPlaylistByIdPublic(post.playlistId);
+          if (playlist && playlist.tracks && playlist.tracks.length > 0) {
+            // Find first track with a non-empty image
+            const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
+            if (trackWithImage?.image) {
+              post.playlistImage = trackWithImage.image;
+            }
+          }
+        } catch (error) {
+          // If playlist fetch fails, just continue without updating image
+          console.error("Error fetching playlist for post:", error);
+        }
+      }
+      
+      return {
+        ...post,
+        _id: post._id.toString(),
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+      } as Post;
+    })
+  );
+
+  return processedPosts;
 }
 
 export async function getPostById(postId: string): Promise<Post | null> {
