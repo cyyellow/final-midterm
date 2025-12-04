@@ -344,7 +344,7 @@ export function RightSidebarContent({
         <CardHeader className="pb-2 px-3 pt-3">
           <CardTitle className="text-xs font-semibold uppercase tracking-wide">Listening History</CardTitle>
         </CardHeader>
-        <CardContent className="px-0 pb-2 overflow-hidden">
+        <CardContent className="px-0 pb-2">
           <ScrollArea className="h-[200px]">
             <div className="px-2 pr-2 space-y-0.5">
               <HistoryTracksList 
@@ -497,20 +497,20 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
         return (
           <div
             key={`${track.name}-${index}`}
-            className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50 overflow-hidden"
+            className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
           >
             <HistoryTrackImage track={track} />
-            <div className="min-w-0 flex-1 overflow-hidden pr-1" style={{ maxWidth: 'calc(100% - 70px)' }}>
+            <div className="flex-1 min-w-0">
               <Link
                 href={track.url}
                 target="_blank"
                 rel="noreferrer"
-                className="block truncate text-xs font-medium text-foreground hover:underline"
+                className="block truncate text-xs font-medium text-foreground hover:underline max-w-[160px]"
               >
                 {track.name}
               </Link>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <p className="flex-1 truncate text-[11px] text-muted-foreground min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="flex-1 truncate text-[11px] text-muted-foreground max-w-[160px]">
                   {track.artist?.["#text"] ?? "Unknown Artist"}
                 </p>
                 <span className="flex-shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
