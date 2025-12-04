@@ -102,3 +102,4 @@ for (let page = 1; page <= totalPages; page++) {
 
 如果要提高準確性，可以實現分頁獲取，但需要權衡載入時間和用戶體驗。
 
+

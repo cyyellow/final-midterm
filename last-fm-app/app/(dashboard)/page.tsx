@@ -62,7 +62,7 @@ export default async function DashboardPage() {
         {/* Recap Stats Section */}
         {listeningStats.totalScrobbles > 0 && (
           <RecapStatsCard listeningStats={listeningStats} year={currentYear} />
-        )}
+          )}
       </div>
     </div>
   );

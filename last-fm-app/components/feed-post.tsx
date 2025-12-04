@@ -205,25 +205,25 @@ export function FeedPost({ post }: FeedPostProps) {
 
   return (
     <>
-      <div className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
-        <div className="mb-3 flex items-start gap-3">
-          <Avatar className="h-10 w-10">
+    <div className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div className="mb-3 flex items-start gap-3">
+        <Avatar className="h-10 w-10">
             <AvatarImage src={currentPost.userImage} />
             <AvatarFallback>{currentPost.username[0].toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
+        </Avatar>
+        <div className="flex-1">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
                 <span className="font-semibold">{currentPost.username}</span>
-                <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
                   {new Date(currentPost.createdAt).toLocaleDateString()}
-                </span>
+            </span>
                 {currentPost.isPublic ? (
-                  <Globe className="h-3 w-3 text-muted-foreground" />
-                ) : (
-                  <Lock className="h-3 w-3 text-muted-foreground" />
-                )}
-              </div>
+              <Globe className="h-3 w-3 text-muted-foreground" />
+            ) : (
+              <Lock className="h-3 w-3 text-muted-foreground" />
+            )}
+          </div>
               {isOwner && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -254,62 +254,62 @@ export function FeedPost({ post }: FeedPostProps) {
                 </DropdownMenu>
               )}
             </div>
-          </div>
         </div>
+      </div>
 
         {currentPost.playlistId ? (
           <Link href={`/playlists/${currentPost.playlistId}`}>
-            <div className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity">
-              <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
+          <div className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
                 {currentPost.playlistImage ? (
-                  <img
+                <img
                     src={currentPost.playlistImage}
                     alt={currentPost.playlistName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <ListMusic className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">Playlist: {currentPost.playlistName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {currentPost.playlistTrackCount || 0} tracks
-                </p>
-              </div>
-            </div>
-          </Link>
-        ) : currentPost.track ? (
-          <a
-            href={getMusicLink(currentPost.track)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
-              {currentPost.track.image ? (
-                <img
-                  src={currentPost.track.image}
-                  alt={currentPost.track.name}
                   className="h-full w-full object-cover"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <Music className="h-8 w-8 text-muted-foreground" />
+                  <ListMusic className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
+                <p className="font-medium">Playlist: {currentPost.playlistName}</p>
+              <p className="text-sm text-muted-foreground">
+                  {currentPost.playlistTrackCount || 0} tracks
+              </p>
+            </div>
+          </div>
+        </Link>
+        ) : currentPost.track ? (
+        <a
+            href={getMusicLink(currentPost.track)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
+              {currentPost.track.image ? (
+              <img
+                  src={currentPost.track.image}
+                  alt={currentPost.track.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Music className="h-8 w-8 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
               <p className="font-medium">{currentPost.track.name}</p>
               <p className="text-sm text-muted-foreground">{currentPost.track.artist}</p>
               {currentPost.track.album && (
                 <p className="text-xs text-muted-foreground">{currentPost.track.album}</p>
-              )}
-            </div>
-          </a>
-        ) : null}
+            )}
+          </div>
+        </a>
+      ) : null}
 
         {currentPost.thoughts && (
           <p className="mt-3 text-sm leading-relaxed">{currentPost.thoughts}</p>
@@ -455,8 +455,8 @@ export function FeedPost({ post }: FeedPostProps) {
                 </form>
               )}
             </div>
-          )}
-        </div>
+      )}
+    </div>
       </div>
 
       <EditPostDialog
