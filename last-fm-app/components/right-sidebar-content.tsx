@@ -66,13 +66,49 @@ export function RightSidebarContent({
   const [nowPlaying, setNowPlaying] = useState<LastfmTrack | null>(initialNowPlaying);
   const [recentTracks, setRecentTracks] = useState<LastfmTrack[]>(initialRecentTracks);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [canEditCurrentPlaylist, setCanEditCurrentPlaylist] = useState(false);
 
   const playlistMatch = pathname.match(/^\/playlists\/([^\/\?]+)/);
   const currentPlaylistId = playlistMatch?.[1] || null;
-  const currentPlaylist = currentPlaylistId
-    ? playlists.find((p) => (p as any)._id === currentPlaylistId)
-    : null;
-  const isPlaylistOwner = !!currentPlaylist;
+  const hasSidebarPlaylistEditAccess =
+    !!(
+      currentPlaylistId &&
+      username &&
+      canEditCurrentPlaylist
+    );
+
+  // Determine if the current playlist (including collaborative/public ones)
+  // is editable by the current user. This works even for playlists owned by others.
+  useEffect(() => {
+    if (!currentPlaylistId) {
+      setCanEditCurrentPlaylist(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkPermissions = async () => {
+      try {
+        const res = await fetch(`/api/playlists/${currentPlaylistId}/permissions`);
+        if (!res.ok) {
+          if (!cancelled) setCanEditCurrentPlaylist(false);
+          return;
+        }
+        const data = (await res.json()) as { canEdit?: boolean };
+        if (!cancelled) {
+          setCanEditCurrentPlaylist(!!data.canEdit);
+        }
+      } catch {
+        if (!cancelled) setCanEditCurrentPlaylist(false);
+      }
+    };
+
+    checkPermissions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPlaylistId]);
 
   const getBestImage = (images?: Array<{ size: string; "#text": string }>) => {
     if (!images || images.length === 0) return undefined;
@@ -86,7 +122,7 @@ export function RightSidebarContent({
   };
 
   const handleAddTrackToSidebarPlaylist = async (track: LastfmTrack) => {
-    if (!currentPlaylistId || !isPlaylistOwner) return;
+    if (!currentPlaylistId || !hasSidebarPlaylistEditAccess) return;
 
     try {
       const newTrack = {
@@ -248,7 +284,7 @@ export function RightSidebarContent({
     }
   };
 
-  if (currentPlaylistId && isPlaylistOwner && username) {
+  if (hasSidebarPlaylistEditAccess) {
     return (
       <div className="flex h-screen flex-col overflow-hidden">
         <h2 className="mb-4 text-lg font-semibold">Add Songs</h2>
