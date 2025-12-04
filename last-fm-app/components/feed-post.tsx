@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface FeedPostProps {
 export function FeedPost({ post }: FeedPostProps) {
   const { data: session } = useSession();
   const { toast } = useToast();
+  const router = useRouter();
   const [comments, setComments] = useState<Comment[]>(post.comments || []);
   const [showComments, setShowComments] = useState(false);
   const [commentInput, setCommentInput] = useState("");
@@ -120,7 +122,8 @@ export function FeedPost({ post }: FeedPostProps) {
 
       if (res.ok) {
         toast({ title: "Post deleted" });
-        window.location.reload();
+        // Only refresh the current route, not the entire page
+        router.refresh();
       } else {
         toast({
           title: "Failed to delete post",
@@ -258,13 +261,22 @@ export function FeedPost({ post }: FeedPostProps) {
             <span className="text-xs text-muted-foreground">
                   {new Date(currentPost.createdAt).toLocaleDateString()}
             </span>
-                {currentPost.visibility === "public" ? (
-              <Globe className="h-3 w-3 text-muted-foreground" />
-            ) : currentPost.visibility === "friends" ? (
-              <Users className="h-3 w-3 text-muted-foreground" />
-            ) : (
-              <Lock className="h-3 w-3 text-muted-foreground" />
-            )}
+                {(() => {
+                  // Check visibility field first, then fallback to legacy isPublic
+                  const visibility = currentPost.visibility;
+                  const isPublic = (currentPost as any).isPublic;
+                  
+                  if (visibility === "public" || isPublic === true) {
+                    return <Globe className="h-3 w-3 text-muted-foreground" />;
+                  } else if (visibility === "friends" || (visibility === undefined && isPublic === false)) {
+                    return <Users className="h-3 w-3 text-muted-foreground" />;
+                  } else if (visibility === "private") {
+                    return <Lock className="h-3 w-3 text-muted-foreground" />;
+                  } else {
+                    // Default to friends icon for legacy posts without visibility
+                    return <Users className="h-3 w-3 text-muted-foreground" />;
+                  }
+                })()}
           </div>
               {isOwner && (
                 <DropdownMenu>

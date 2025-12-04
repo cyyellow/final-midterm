@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { unstable_cache } from "next/cache";
 
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
 
@@ -122,18 +123,30 @@ export async function getNowPlaying(username: string) {
 }
 
 export async function getTopArtists(username: string, limit = 5, period = "7day") {
-  const data = await fetchLastfm<{
-    topartists?: {
-      artist?: LastfmArtist[];
-    };
-  }>({
-    method: "user.getTopArtists",
-    user: username,
-    limit: limit.toString(),
-    period,
-  });
+  // Cache top artists for 5 minutes to reduce API calls
+  const getCachedTopArtists = unstable_cache(
+    async () => {
+      const data = await fetchLastfm<{
+        topartists?: {
+          artist?: LastfmArtist[];
+        };
+      }>({
+        method: "user.getTopArtists",
+        user: username,
+        limit: limit.toString(),
+        period,
+      });
 
-  return data.topartists?.artist ?? [];
+      return data.topartists?.artist ?? [];
+    },
+    [`top-artists-${username}-${limit}-${period}`],
+    {
+      revalidate: 300, // 5 minutes
+      tags: [`top-artists-${username}`],
+    }
+  );
+
+  return getCachedTopArtists();
 }
 
 export async function getWeeklyTopArtists(username: string) {
@@ -268,37 +281,49 @@ export async function getTopAlbums(artist: string, limit = 1) {
 }
 
 export async function getUserListeningStats(username: string, from?: number, to?: number) {
-  // Get all recent tracks for the period
-  const limit = 1000; // Last.fm API max limit per request
-  const data = await fetchLastfm<{
-    recenttracks?: {
-      track?: LastfmTrack[];
-      "@attr"?: {
-        totalPages?: string;
-        page?: string;
-        total?: string;
-        perPage?: string;
-      };
-    };
-  }>({
-    method: "user.getRecentTracks",
-    user: username,
-    limit: limit.toString(),
-    ...(from && { from: from.toString() }),
-    ...(to && { to: to.toString() }),
-  });
+  // Cache listening stats for 10 minutes
+  const getCachedListeningStats = unstable_cache(
+    async () => {
+      // Get all recent tracks for the period
+      const limit = 1000; // Last.fm API max limit per request
+      const data = await fetchLastfm<{
+        recenttracks?: {
+          track?: LastfmTrack[];
+          "@attr"?: {
+            totalPages?: string;
+            page?: string;
+            total?: string;
+            perPage?: string;
+          };
+        };
+      }>({
+        method: "user.getRecentTracks",
+        user: username,
+        limit: limit.toString(),
+        ...(from && { from: from.toString() }),
+        ...(to && { to: to.toString() }),
+      });
 
-  const tracks = data.recenttracks?.track ?? [];
-  const totalPages = parseInt(data.recenttracks?.["@attr"]?.totalPages || "1");
-  
-  // If there are more pages, we'd need to fetch them (for now, we'll use the first page)
-  // For a full recap, you'd want to paginate through all pages
-  
-  return {
-    tracks,
-    totalScrobbles: parseInt(data.recenttracks?.["@attr"]?.total || "0"),
-    totalPages,
-  };
+      const tracks = data.recenttracks?.track ?? [];
+      const totalPages = parseInt(data.recenttracks?.["@attr"]?.totalPages || "1");
+      
+      // If there are more pages, we'd need to fetch them (for now, we'll use the first page)
+      // For a full recap, you'd want to paginate through all pages
+      
+      return {
+        tracks,
+        totalScrobbles: parseInt(data.recenttracks?.["@attr"]?.total || "0"),
+        totalPages,
+      };
+    },
+    [`listening-stats-${username}-${from}-${to}`],
+    {
+      revalidate: 600, // 10 minutes
+      tags: [`listening-stats-${username}`],
+    }
+  );
+
+  return getCachedListeningStats();
 }
 
 export async function getTopTracks(username: string, limit = 50, period: "7day" | "1month" | "3month" | "6month" | "12month" | "overall" = "overall") {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
-import { createPost } from "@/lib/posts";
+import { createPost, getPosts } from "@/lib/posts";
 import { updatePlaylist } from "@/lib/playlist";
 import { z } from "zod";
 
@@ -21,6 +21,30 @@ const createPostSchema = z.object({
 }).refine((data) => data.track || data.playlistId, {
   message: "Either track or playlistId must be provided",
 });
+
+export async function GET(request: Request) {
+  try {
+    const session = await getAuthSession();
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const filter = searchParams.get("filter") as "friends" | "everyone" | null;
+    const limit = parseInt(searchParams.get("limit") || "100");
+
+    const posts = await getPosts(limit, session.user.id, filter || "friends");
+
+    return NextResponse.json({ posts });
+  } catch (error) {
+    console.error("Failed to get posts:", error);
+    return NextResponse.json(
+      { error: "Failed to get posts" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {

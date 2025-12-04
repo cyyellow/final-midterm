@@ -34,7 +34,7 @@ export async function createPost(
   };
 }
 
-export async function getPosts(limit = 100, currentUserId?: string): Promise<Post[]> {
+export async function getPosts(limit = 100, currentUserId?: string, filter?: "friends" | "everyone"): Promise<Post[]> {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
@@ -58,14 +58,33 @@ export async function getPosts(limit = 100, currentUserId?: string): Promise<Pos
   // Include self
   const allowedUserIds = [...friendIds, currentUserId];
 
-  const posts = await db
-    .collection("posts")
-    .find({
+  // Build query based on filter
+  let query: any;
+  
+  if (filter === "everyone") {
+    // Everyone view: Show all public posts from anyone
+    query = {
       $or: [
         // Public posts from anyone (new format with visibility field)
         { visibility: "public" },
         // Legacy public posts (old format with isPublic field)
-        { isPublic: true },
+        { isPublic: true }
+      ]
+    };
+  } else {
+    // Friends view (default): Show only posts from friends and self (public or friends-only), plus own private posts
+    query = {
+      $or: [
+        // Public posts from friends or self (new format)
+        {
+          userId: { $in: allowedUserIds },
+          visibility: "public"
+        },
+        // Legacy public posts from friends or self
+        {
+          userId: { $in: allowedUserIds },
+          isPublic: true
+        },
         // Friends-only posts from friends or self (new format)
         {
           userId: { $in: allowedUserIds },
@@ -85,7 +104,12 @@ export async function getPosts(limit = 100, currentUserId?: string): Promise<Pos
           visibility: "private"
         }
       ]
-    })
+    };
+  }
+
+  const posts = await db
+    .collection("posts")
+    .find(query)
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();

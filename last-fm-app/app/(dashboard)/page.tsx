@@ -6,7 +6,8 @@ import { TopArtistsCard } from "@/components/top-artists-card";
 import { MyPlaylistCard } from "@/components/my-playlist-card";
 import { RecapStatsCard } from "@/components/recap-stats-card";
 
-export const dynamic = "force-dynamic";
+// Use revalidate instead of force-dynamic to allow caching
+export const revalidate = 300; // Revalidate every 5 minutes
 
 export default async function DashboardPage() {
   const session = await getAuthSession();
@@ -25,24 +26,34 @@ export default async function DashboardPage() {
   const yearEnd = Math.floor(new Date(currentYear, 11, 31, 23, 59, 59).getTime() / 1000);
 
   // Fetch data in parallel, with error handling for Last.fm API
+  // Using allSettled to ensure we get results even if some fail
   const [topArtistsResult, homepagePlaylist, listeningStatsResult, allPlaylistsResult] = await Promise.allSettled([
-    getTopArtists(session.user.lastfmUsername).catch(() => []),
+    getTopArtists(session.user.lastfmUsername).catch((error) => {
+      console.error("Failed to fetch top artists:", error);
+      return [];
+    }),
     getHomepagePlaylist(session.user.id),
-    getUserListeningStats(session.user.lastfmUsername, yearStart, yearEnd).catch(() => ({
-      tracks: [],
-      totalScrobbles: 0,
-      totalPages: 0,
-    })),
+    getUserListeningStats(session.user.lastfmUsername, yearStart, yearEnd).catch((error) => {
+      console.error("Failed to fetch listening stats:", error);
+      return {
+        tracks: [],
+        totalScrobbles: 0,
+        totalPages: 0,
+      };
+    }),
     getUserPlaylists(session.user.id),
   ]);
 
+  // Extract results with fallbacks - this ensures data persists even if API calls fail
   const topArtists = topArtistsResult.status === "fulfilled" ? topArtistsResult.value : [];
   const playlistData = homepagePlaylist.status === "fulfilled" ? homepagePlaylist.value : null;
-  const listeningStats = listeningStatsResult.status === "fulfilled" ? listeningStatsResult.value : {
-    tracks: [],
-    totalScrobbles: 0,
-    totalPages: 0,
-  };
+  const listeningStats = listeningStatsResult.status === "fulfilled" 
+    ? listeningStatsResult.value 
+    : {
+        tracks: [],
+        totalScrobbles: 0,
+        totalPages: 0,
+      };
   const allPlaylists = allPlaylistsResult.status === "fulfilled" ? allPlaylistsResult.value : [];
 
   return (
