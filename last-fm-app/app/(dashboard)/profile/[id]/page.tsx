@@ -37,11 +37,18 @@ export default async function UserProfilePage({
 
   const posts = await getUserPosts(id, 100, session.user.id);
 
-  // Group posts by week
+  // Group posts by week (Monday to Sunday)
   const postsByWeek = posts.reduce((acc, post) => {
     const date = new Date(post.createdAt);
+    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const dayOfWeek = date.getDay();
+    // Calculate days to subtract to get to Monday (1)
+    // If Sunday (0), go back 6 days. Otherwise, go back (dayOfWeek - 1) days
+    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const weekStart = new Date(date);
-    weekStart.setDate(date.getDate() - date.getDay());
+    weekStart.setDate(date.getDate() - daysToSubtract);
+    // Set to start of day to avoid timezone issues
+    weekStart.setHours(0, 0, 0, 0);
     const weekKey = weekStart.toISOString().split("T")[0];
     
     if (!acc[weekKey]) {
@@ -51,7 +58,10 @@ export default async function UserProfilePage({
     return acc;
   }, {} as Record<string, typeof posts>);
 
-  const weeks = Object.entries(postsByWeek).sort(([a], [b]) => b.localeCompare(a));
+  // Filter out empty weeks and sort
+  const weeks = Object.entries(postsByWeek)
+    .filter(([_, weekPosts]) => weekPosts.length > 0)
+    .sort(([a], [b]) => b.localeCompare(a));
 
   return (
     <div className="flex flex-1 flex-col gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-6 lg:px-10">

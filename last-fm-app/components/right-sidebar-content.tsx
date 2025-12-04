@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Music2, Send, Plus, MoreVertical, Play } from "lucide-react";
+import { Music, Music2, Send, Plus, MoreVertical, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
@@ -456,8 +456,8 @@ function HistoryTrackImage({ track }: { track: LastfmTrack }) {
           onError={() => setHasError(true)}
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          <Music2 className="h-3 w-3 text-primary/60" />
+        <div className="flex h-full w-full items-center justify-center bg-muted">
+          <Music className="h-3 w-3 text-muted-foreground" />
         </div>
       )}
     </>
@@ -485,8 +485,8 @@ function NowPlayingImage({ track }: { track: LastfmTrack }) {
           onError={() => setHasError(true)}
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          <Music2 className="h-6 w-6 text-primary/60" />
+        <div className="flex h-full w-full items-center justify-center bg-muted">
+          <Music className="h-6 w-6 text-muted-foreground" />
         </div>
       )}
     </>

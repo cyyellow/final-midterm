@@ -93,3 +93,4 @@ body {
 .glass-card {
   @apply border bg-card/65 backdrop-blur;
 }
+

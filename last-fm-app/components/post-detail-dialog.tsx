@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
-import { Edit2, Trash2, MoreVertical, Loader2 } from "lucide-react";
+import { Edit2, Trash2, MoreVertical, Loader2, Music } from "lucide-react";
 import type { Post } from "@/types/post";
 import { TrackLink } from "@/components/track-link";
 import { EditPostDialog } from "./edit-post-dialog";
@@ -138,16 +138,20 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
                 {/* Track Info */}
                 {currentPost.track && (
               <div className="flex gap-4 rounded-lg border bg-muted/30 p-4">
-                {currentPost.track.image && (
-                  <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-md shadow-md">
+                <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-md shadow-md bg-muted">
+                  {currentPost.track.image ? (
                     <Image
                       src={currentPost.track.image}
                       alt={currentPost.track.name}
                       fill
                       className="object-cover"
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Music className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col justify-center">
                   <TrackLink
                     track={{

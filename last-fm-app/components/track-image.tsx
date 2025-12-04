@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Music2 } from "lucide-react";
+import { Music } from "lucide-react";
 
 interface TrackImageProps {
   src: string | null | undefined;
@@ -17,8 +17,8 @@ export function TrackImage({ src, alt, className, fill = false, sizes }: TrackIm
 
   if (!src || hasError) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-        <Music2 className="h-5 w-5 text-primary/60" />
+      <div className="flex h-full w-full items-center justify-center bg-muted">
+        <Music className="h-5 w-5 text-muted-foreground" />
       </div>
     );
   }

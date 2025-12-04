@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Music2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PostDetailDialog } from "./post-detail-dialog";
 import type { Post } from "@/types/post";
@@ -11,15 +11,17 @@ interface TrackGridProps {
   posts: Post[];
 }
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 5; // 1 row of 5
 
 export function TrackGrid({ posts }: TrackGridProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
-  const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
+  // Filter posts with tracks first
+  const postsWithTracks = posts.filter((post) => post.track);
+  const totalPages = Math.ceil(postsWithTracks.length / ITEMS_PER_PAGE);
   const startIndex = currentPage * ITEMS_PER_PAGE;
-  const visiblePosts = posts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const visiblePosts = postsWithTracks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const goToPrevious = () => {
     setCurrentPage((prev) => Math.max(0, prev - 1));
@@ -32,37 +34,37 @@ export function TrackGrid({ posts }: TrackGridProps) {
   return (
     <>
       <div className="relative">
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
-          {visiblePosts
-            .filter((post) => post.track) // Only show posts with tracks
-            .map((post) => (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {visiblePosts.map((post) => (
               <button
                 key={post._id}
                 type="button"
                 onClick={() => setSelectedPost(post)}
-                className="group flex flex-col gap-2 text-left transition-all hover:scale-105"
+                className="group relative aspect-square overflow-hidden rounded-lg bg-muted shadow-md hover:shadow-lg transition-all hover:scale-105 cursor-pointer"
               >
-                <div className="relative aspect-square overflow-hidden rounded-lg bg-muted shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-                  {post.track?.image ? (
-                    <Image
-                      src={post.track.image}
-                      alt={post.track.name}
-                      fill
-                      className="object-cover transition-opacity group-hover:opacity-80"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                      <Music2 className="h-8 w-8 text-primary/60" />
-                    </div>
-                  )}
-                </div>
-                <div className="px-1 text-left">
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    {post.track?.name}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {post.track?.artist}
-                  </p>
+                {post.track?.image ? (
+                  <Image
+                    src={post.track.image}
+                    alt={post.track.name}
+                    fill
+                    className="object-cover transition-opacity group-hover:opacity-80"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-muted">
+                    <Music className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                {/* Text overlay on bottom of track */}
+                <div className="absolute bottom-0 left-0 right-0 z-20 h-2/5 pointer-events-none" style={{ transition: 'none' }}>
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%)' }}></div>
+                  <div className="absolute bottom-0 left-0 right-0 flex flex-col p-2 pointer-events-auto overflow-hidden">
+                    <p className="truncate text-sm font-semibold text-white drop-shadow-md">
+                      {post.track?.name}
+                    </p>
+                    <p className="truncate text-xs text-white/90 drop-shadow-md">
+                      {post.track?.artist}
+                    </p>
+                  </div>
                 </div>
               </button>
             ))}
