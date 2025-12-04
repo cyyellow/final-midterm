@@ -190,9 +190,6 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
     }
   };
 
-  // Get playlist cover image (use first track's image or a gradient)
-  const playlistCover = playlist?.tracks?.[0]?.image;
-
   return (
     <Card className="h-full flex flex-col overflow-hidden">
       <CardHeader 
@@ -250,35 +247,6 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
       </CardHeader>
       {isExpanded && (
         <>
-          {/* Spotify-style header with large cover */}
-          {playlist && playlist.tracks.length > 0 && (
-            <div className="relative h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-background overflow-hidden">
-              <div className="absolute inset-0 flex items-center gap-4 p-4">
-                <div className="relative h-24 w-24 flex-shrink-0 rounded-md shadow-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
-                  {playlistCover ? (
-                    <Image
-                      src={playlistCover}
-                      alt={playlist.name}
-                      fill
-                      className="object-cover"
-                      sizes="96px"
-                      onError={() => {}}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Music className="h-10 w-10 text-primary/60" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold truncate">{playlist.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {playlist.tracks.length} {playlist.tracks.length === 1 ? 'song' : 'songs'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
           <CardContent className="flex-1 min-h-0 overflow-hidden p-0">
             <ScrollArea className="h-[300px] px-4">
               {playlist && playlist.tracks.length > 0 ? (

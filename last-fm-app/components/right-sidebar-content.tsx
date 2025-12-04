@@ -518,7 +518,7 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
                 </span>
               </div>
             </div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <div className="flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
