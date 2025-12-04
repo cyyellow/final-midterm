@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { AuthProvider } from "@/components/providers/session-provider";
+import { BodyPointerEventsFix } from "@/components/providers/body-pointer-fix";
 import { Toaster } from "@/components/ui/toaster";
 import { getAuthSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default async function RootLayout({
         )}
       >
         <AuthProvider session={session}>
+          <BodyPointerEventsFix />
           {children}
           <Toaster />
         </AuthProvider>
