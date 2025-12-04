@@ -498,7 +498,12 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
   const [selectedTrack, setSelectedTrack] = useState<LastfmTrack | null>(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [isAddingToPlaylist, setIsAddingToPlaylist] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handlePostClick = (track: LastfmTrack, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -591,7 +596,7 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
                   {track.artist?.["#text"] ?? "Unknown Artist"}
                 </p>
                 <span className="flex-shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
-                  {isNowPlaying ? "Now" : getRelativeTime(track.date?.uts)}
+                  {isNowPlaying ? "Now" : mounted ? getRelativeTime(track.date?.uts) : "—"}
                 </span>
               </div>
             </div>

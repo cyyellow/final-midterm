@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 import {
@@ -27,6 +30,12 @@ function getRelativeTime(uts?: string) {
 }
 
 export function ListeningHistoryList({ tracks }: ListeningHistoryListProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <Card className="glass-card">
       <CardHeader className="pb-5">
@@ -58,7 +67,7 @@ export function ListeningHistoryList({ tracks }: ListeningHistoryListProps) {
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {isNowPlaying ? "Now" : getRelativeTime(track.date?.uts)}
+                    {isNowPlaying ? "Now" : mounted ? getRelativeTime(track.date?.uts) : "—"}
                   </span>
                 </li>
               );
