@@ -19,7 +19,15 @@ import { useToast } from "@/components/ui/use-toast";
 import type { Post, Comment } from "@/types/post";
 import { Music, Globe, Lock, Users, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical, Play, Heart } from "lucide-react";
 import { TrackLink } from "@/components/track-link";
-import { EditPostDialog } from "./edit-post-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface FeedPostProps {
   post: Post;
@@ -36,6 +44,10 @@ export function FeedPost({ post }: FeedPostProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<Post>(post);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [thoughts, setThoughts] = useState(post.thoughts || "");
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private">(post.visibility ?? "friends");
   const [commentsLoaded, setCommentsLoaded] = useState(!!post.comments);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
@@ -46,6 +58,9 @@ export function FeedPost({ post }: FeedPostProps) {
   const [isLiking, setIsLiking] = useState(false);
 
   const isOwner = session?.user?.id === post.userId;
+  const MAX_CHARACTERS = 200;
+  const remainingChars = MAX_CHARACTERS - thoughts.length;
+  const isOverLimit = remainingChars < 0;
 
   // Check if current user has liked this post
   useEffect(() => {
@@ -142,7 +157,60 @@ export function FeedPost({ post }: FeedPostProps) {
 
   const handlePostUpdated = (updatedPost: Post) => {
     setCurrentPost(updatedPost);
+    setThoughts(updatedPost.thoughts || "");
+    setVisibility(updatedPost.visibility ?? "friends");
+    setIsEditing(false);
     toast({ title: "Post updated" });
+  };
+
+  const handleUpdate = async () => {
+    if (!currentPost || !thoughts.trim() || isSubmitting || isOverLimit) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/posts/${currentPost._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          thoughts: thoughts.trim(),
+          visibility,
+        }),
+      });
+
+      if (res.ok) {
+        const updatedPost = await res.json();
+        handlePostUpdated(updatedPost);
+        setEditDialogOpen(false);
+        router.refresh();
+      } else {
+        const error = await res.json();
+        toast({
+          title: "Failed to update post",
+          description: error.error || "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to update post",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setThoughts(currentPost.thoughts || "");
+    setVisibility(currentPost.visibility ?? "friends");
+    setIsEditing(false);
+  };
+
+  const handleStartEdit = () => {
+    setThoughts(currentPost.thoughts || "");
+    setVisibility(currentPost.visibility ?? "friends");
+    setIsEditing(true);
+    setEditDialogOpen(true);
   };
 
   const handleStartEditComment = (comment: Comment) => {
@@ -259,7 +327,7 @@ export function FeedPost({ post }: FeedPostProps) {
           <div className="flex items-center gap-2">
                 <span className="font-semibold">{currentPost.username}</span>
             <span className="text-xs text-muted-foreground">
-                  {new Date(currentPost.createdAt).toLocaleDateString()}
+                  {new Date(currentPost.createdAt).toLocaleDateString()} {new Date(currentPost.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
             </span>
                 {(() => {
                   // Check visibility field first, then fallback to legacy isPublic
@@ -286,7 +354,7 @@ export function FeedPost({ post }: FeedPostProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+                    <DropdownMenuItem onClick={handleStartEdit}>
                       <Edit2 className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -537,12 +605,151 @@ export function FeedPost({ post }: FeedPostProps) {
     </div>
       </div>
 
-      <EditPostDialog
-        post={currentPost}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onPostUpdated={handlePostUpdated}
-      />
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) {
+          handleCancelEdit();
+        }
+      }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg lg:max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Track/Playlist Info */}
+            {currentPost.playlistId ? (
+              <div className="flex gap-3">
+                <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
+                  {currentPost.playlistImage ? (
+                    <img
+                      src={currentPost.playlistImage}
+                      alt={currentPost.playlistName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <ListMusic className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">Playlist: {currentPost.playlistName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {currentPost.playlistTrackCount || 0} tracks
+                  </p>
+                </div>
+              </div>
+            ) : currentPost.track ? (
+              <div className="flex gap-3">
+                <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
+                  {currentPost.track.image ? (
+                    <img
+                      src={currentPost.track.image}
+                      alt={currentPost.track.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Music className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <p className="font-medium">{currentPost.track.name}</p>
+                  <p className="text-sm text-muted-foreground">{currentPost.track.artist}</p>
+                  {currentPost.track.album && (
+                    <p className="text-xs text-muted-foreground">{currentPost.track.album}</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Thoughts */}
+            <div className="space-y-2">
+              <Label htmlFor="thoughts">Your thoughts</Label>
+              <Textarea
+                id="thoughts"
+                value={thoughts}
+                onChange={(e) => setThoughts(e.target.value)}
+                placeholder="Share what you think..."
+                maxLength={MAX_CHARACTERS}
+                rows={4}
+                className={isOverLimit ? "border-destructive" : ""}
+              />
+              <p className={`text-xs ${isOverLimit ? "text-destructive" : "text-muted-foreground"}`}>
+                {remainingChars} characters remaining
+              </p>
+            </div>
+
+            {/* Visibility */}
+            <div className="space-y-2">
+              <Label htmlFor="visibility">Post Visibility</Label>
+              <Select value={visibility} onValueChange={(value: "public" | "friends" | "private") => setVisibility(value)}>
+                <SelectTrigger id="visibility" className="w-full">
+                  <div className="flex items-center gap-2">
+                    {visibility === "public" && <Globe className="h-4 w-4" />}
+                    {visibility === "friends" && <Users className="h-4 w-4" />}
+                    {visibility === "private" && <Lock className="h-4 w-4" />}
+                    <SelectValue>
+                      {visibility === "public" && "Public"}
+                      {visibility === "friends" && "Friends Only"}
+                      {visibility === "private" && "Private"}
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      <span>Public - Anyone can see this post</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="friends">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Friends Only - Only your friends can see this post</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      <span>Private - Only you can see this post</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditDialogOpen(false);
+                  handleCancelEdit();
+                }}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdate}
+                disabled={isSubmitting || !thoughts.trim() || isOverLimit}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Post"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

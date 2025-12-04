@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -32,6 +32,11 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
   const [copyingPlaylistId, setCopyingPlaylistId] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Sync with initialPlaylists when they change (e.g., after router.refresh())
+  useEffect(() => {
+    setPlaylists(initialPlaylists);
+  }, [initialPlaylists]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

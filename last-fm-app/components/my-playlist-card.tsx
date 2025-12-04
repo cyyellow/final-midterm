@@ -60,6 +60,11 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
     setIsMounted(true);
   }, []);
 
+  // Sync with initialPlaylist and allPlaylists when they change (e.g., after router.refresh())
+  useEffect(() => {
+    setPlaylist(initialPlaylist);
+  }, [initialPlaylist]);
+
   // Ensure there is a playlist to add tracks into.
   // If user has no playlist yet, we create a default one on the fly.
   const ensurePlaylist = async (): Promise<Playlist | null> => {

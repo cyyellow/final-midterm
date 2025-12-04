@@ -141,90 +141,92 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
             <>
               <DialogHeader>
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between pr-12">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={currentPost.userImage} />
-                        <AvatarFallback>{currentPost.username[0]?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">{currentPost.username}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(currentPost.createdAt).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={currentPost.userImage} />
+                      <AvatarFallback>{currentPost.username[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{currentPost.username}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(currentPost.createdAt).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
                     </div>
-                    {isOwner && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 mr-2">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                            <Edit2 className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
-                              </>
-                            ) : (
-                              <>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
                   </div>
                   {/* Track Info */}
                   {currentPost.track && (
-                    <TrackLink
-                      track={{
-                        name: currentPost.track.name,
-                        artist: currentPost.track.artist,
-                        // @ts-expect-error Some track types may not have url but it's optional
-                        url: currentPost.track.url,
-                      }}
-                      className="group flex gap-3 cursor-pointer hover:opacity-80 transition-opacity items-start"
-                    >
-                      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
-                        {currentPost.track.image ? (
-                          <img
-                            src={currentPost.track.image}
-                            alt={currentPost.track.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Music className="h-8 w-8 text-muted-foreground" />
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1">
+                        <TrackLink
+                          track={{
+                            name: currentPost.track.name,
+                            artist: currentPost.track.artist,
+                            // @ts-expect-error Some track types may not have url but it's optional
+                            url: currentPost.track.url,
+                          }}
+                          className="group flex gap-3 cursor-pointer hover:opacity-80 transition-opacity items-start"
+                        >
+                          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
+                            {currentPost.track.image ? (
+                              <img
+                                src={currentPost.track.image}
+                                alt={currentPost.track.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <Music className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Play className="h-6 w-6 text-white fill-white" />
+                            </div>
                           </div>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Play className="h-6 w-6 text-white fill-white" />
-                        </div>
+                          <div className="min-w-0 flex-1 pt-0.5">
+                            <p className="font-medium">{currentPost.track.name}</p>
+                            <p className="text-sm text-muted-foreground">{currentPost.track.artist}</p>
+                            {currentPost.track.album && (
+                              <p className="text-xs text-muted-foreground">{currentPost.track.album}</p>
+                            )}
+                          </div>
+                        </TrackLink>
                       </div>
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <p className="font-medium">{currentPost.track.name}</p>
-                        <p className="text-sm text-muted-foreground">{currentPost.track.artist}</p>
-                        {currentPost.track.album && (
-                          <p className="text-xs text-muted-foreground">{currentPost.track.album}</p>
-                        )}
-                      </div>
-                    </TrackLink>
+                      {isOwner && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                              <Edit2 className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={handleDelete}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   )}
                   {/* Thoughts */}
                   {isEditing ? (
