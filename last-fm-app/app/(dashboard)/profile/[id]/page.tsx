@@ -35,7 +35,7 @@ export default async function UserProfilePage({
     redirect("/");
   }
 
-  const posts = await getUserPosts(id);
+  const posts = await getUserPosts(id, 100, session.user.id);
 
   // Group posts by week
   const postsByWeek = posts.reduce((acc, post) => {

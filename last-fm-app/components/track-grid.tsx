@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PostDetailDialog } from "./post-detail-dialog";
-import { TrackLink } from "./track-link";
 import type { Post } from "@/types/post";
 
 interface TrackGridProps {
@@ -37,18 +36,13 @@ export function TrackGrid({ posts }: TrackGridProps) {
           {visiblePosts
             .filter((post) => post.track) // Only show posts with tracks
             .map((post) => (
-              <div
+              <button
                 key={post._id}
+                type="button"
+                onClick={() => setSelectedPost(post)}
                 className="group flex flex-col gap-2 text-left transition-all hover:scale-105"
               >
-                <TrackLink
-                  track={{
-                    name: post.track?.name || "",
-                    artist: post.track?.artist || "",
-                    url: post.track?.url,
-                  }}
-                  className="relative aspect-square overflow-hidden rounded-lg bg-muted shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                >
+                <div className="relative aspect-square overflow-hidden rounded-lg bg-muted shadow-md hover:shadow-lg transition-shadow cursor-pointer">
                   {post.track?.image ? (
                     <Image
                       src={post.track.image}
@@ -61,22 +55,16 @@ export function TrackGrid({ posts }: TrackGridProps) {
                       <span className="text-4xl">🎵</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="h-8 w-8 text-white fill-white" />
-                  </div>
-                </TrackLink>
-                <button
-                  onClick={() => setSelectedPost(post)}
-                  className="px-1 text-left"
-                >
+                </div>
+                <div className="px-1 text-left">
                   <p className="truncate text-sm font-semibold text-foreground">
                     {post.track?.name}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {post.track?.artist}
                   </p>
-                </button>
-              </div>
+                </div>
+              </button>
             ))}
         </div>
 

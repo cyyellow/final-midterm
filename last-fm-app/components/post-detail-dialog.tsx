@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -36,11 +36,11 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
   const isOwner = session?.user?.id === post?.userId;
 
   // Update currentPost when post prop changes
-  useState(() => {
+  useEffect(() => {
     if (post) {
       setCurrentPost(post);
     }
-  });
+  }, [post]);
 
   const handleDelete = async () => {
     if (!post || !confirm("Are you sure you want to delete this post?")) return;
@@ -76,67 +76,67 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
     toast({ title: "Post updated" });
   };
 
-  if (!post || !currentPost) return null;
-
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open && !!post} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={currentPost.userImage} />
-                  <AvatarFallback>{currentPost.username[0]?.toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-semibold">{currentPost.username}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(currentPost.createdAt).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
+          {post && currentPost && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={currentPost.userImage} />
+                      <AvatarFallback>{currentPost.username[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{currentPost.username}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(currentPost.createdAt).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  {isOwner && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+                          <Edit2 className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
-              </div>
-              {isOwner && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-                      <Edit2 className="mr-2 h-4 w-4" /> Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </DialogHeader>
+              </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Track Info */}
-            {currentPost.track && (
+              <div className="space-y-4">
+                {/* Track Info */}
+                {currentPost.track && (
               <div className="flex gap-4 rounded-lg border bg-muted/30 p-4">
                 {currentPost.track.image && (
                   <div className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-md shadow-md">
@@ -195,13 +195,15 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
               </div>
             )}
 
-            {/* Thoughts */}
-            {currentPost.thoughts && (
-              <div className="rounded-lg bg-muted/20 p-4">
-                <p className="whitespace-pre-wrap leading-relaxed">{currentPost.thoughts}</p>
+                {/* Thoughts */}
+                {currentPost.thoughts && (
+                  <div className="rounded-lg bg-muted/20 p-4">
+                    <p className="whitespace-pre-wrap leading-relaxed">{currentPost.thoughts}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

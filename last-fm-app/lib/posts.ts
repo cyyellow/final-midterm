@@ -23,7 +23,7 @@ export async function createPost(
     thoughts: input.thoughts,
     createdAt: new Date(),
     likes: 0,
-    isPublic: input.isPublic ?? false,
+    visibility: input.visibility ?? "friends",
   };
 
   const result = await db.collection("posts").insertOne(post);
@@ -62,8 +62,18 @@ export async function getPosts(limit = 100, currentUserId?: string): Promise<Pos
     .collection("posts")
     .find({
       $or: [
-        { userId: { $in: allowedUserIds } },
-        { isPublic: true }
+        // Public posts from anyone
+        { visibility: "public" },
+        // Friends-only posts from friends or self
+        {
+          userId: { $in: allowedUserIds },
+          visibility: "friends"
+        },
+        // Private posts only from self
+        {
+          userId: currentUserId,
+          visibility: "private"
+        }
       ]
     })
     .sort({ createdAt: -1 })
@@ -77,13 +87,20 @@ export async function getPosts(limit = 100, currentUserId?: string): Promise<Pos
   })) as Post[];
 }
 
-export async function getUserPosts(userId: string, limit = 100): Promise<Post[]> {
+export async function getUserPosts(userId: string, limit = 100, currentUserId?: string): Promise<Post[]> {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
+  // If viewing own profile, show all posts including private ones
+  // If viewing someone else's profile, exclude private posts
+  const query: any = { userId };
+  if (currentUserId !== userId) {
+    query.visibility = { $ne: "private" };
+  }
+
   const posts = await db
     .collection("posts")
-    .find({ userId })
+    .find(query)
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();
@@ -118,7 +135,7 @@ export async function getPostById(postId: string): Promise<Post | null> {
 
 export async function updatePost(
   postId: string,
-  updates: { thoughts: string; isPublic?: boolean }
+  updates: { thoughts: string; visibility?: "public" | "friends" | "private" }
 ): Promise<Post> {
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
@@ -132,7 +149,7 @@ export async function updatePost(
     {
       $set: {
         thoughts: updates.thoughts,
-        ...(updates.isPublic !== undefined && { isPublic: updates.isPublic }),
+        ...(updates.visibility !== undefined && { visibility: updates.visibility }),
       },
     },
     { returnDocument: "after" }

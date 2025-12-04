@@ -12,7 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Globe, Lock, Users } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Post } from "@/types/post";
 
@@ -32,7 +39,7 @@ export function EditPostDialog({
   onPostUpdated,
 }: EditPostDialogProps) {
   const [thoughts, setThoughts] = useState(post.thoughts);
-  const [isPublic, setIsPublic] = useState(post.isPublic ?? false);
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private">(post.visibility ?? "friends");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -48,13 +55,13 @@ export function EditPostDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           thoughts: thoughts.trim(),
-          isPublic,
+          visibility,
         }),
       });
 
       if (res.ok) {
-        const data = await res.json();
-        onPostUpdated(data.post);
+        const updatedPost = await res.json();
+        onPostUpdated(updatedPost);
         // Close dialog first - this is critical
         onOpenChange(false);
         // Don't refresh immediately - let the dialog fully close first
@@ -105,17 +112,42 @@ export function EditPostDialog({
               {remainingChars} characters remaining
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isPublic"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              className="rounded"
-            />
-            <Label htmlFor="isPublic" className="text-sm cursor-pointer">
-              Make this post public
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="visibility">Post Visibility</Label>
+            <Select value={visibility} onValueChange={(value: "public" | "friends" | "private") => setVisibility(value)}>
+              <SelectTrigger id="visibility" className="w-full">
+                <div className="flex items-center gap-2">
+                  {visibility === "public" && <Globe className="h-4 w-4" />}
+                  {visibility === "friends" && <Users className="h-4 w-4" />}
+                  {visibility === "private" && <Lock className="h-4 w-4" />}
+                  <SelectValue>
+                    {visibility === "public" && "Public"}
+                    {visibility === "friends" && "Friends Only"}
+                    {visibility === "private" && "Private"}
+                  </SelectValue>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="public">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <span>Public - Anyone can see this post</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="friends">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Friends Only - Only your friends can see this post</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="private">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    <span>Private - Only you can see this post</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex justify-end gap-2">
             <Button

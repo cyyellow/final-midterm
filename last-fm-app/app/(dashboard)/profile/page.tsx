@@ -21,7 +21,7 @@ export default async function ProfilePage() {
   }
 
   const user = await getUserById(session.user.id);
-  const posts = await getUserPosts(session.user.id);
+  const posts = await getUserPosts(session.user.id, 100, session.user.id);
 
   // Group posts by week
   const postsByWeek = posts.reduce((acc, post) => {

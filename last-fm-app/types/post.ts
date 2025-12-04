@@ -26,7 +26,7 @@ export interface Post {
   thoughts: string;
   createdAt: Date;
   likes?: number;
-  isPublic?: boolean;
+  visibility?: "public" | "friends" | "private";
   comments?: Comment[];
 }
 
@@ -43,7 +43,7 @@ export interface CreatePostInput {
   playlistImage?: string;
   playlistTrackCount?: number;
   thoughts: string;
-  isPublic?: boolean;
+  visibility?: "public" | "friends" | "private";
 }
 
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2, Globe, Lock } from "lucide-react";
+import { Loader2, Globe, Lock, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import type { LastfmTrack } from "@/lib/lastfm";
 
@@ -27,7 +33,7 @@ const MAX_CHARACTERS = 200;
 
 export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialogProps) {
   const [thoughts, setThoughts] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private">("friends");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -39,7 +45,7 @@ export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialog
       // Use a small delay to ensure dialog animation completes
       const timer = setTimeout(() => {
         setThoughts("");
-        setIsPublic(false);
+        setVisibility("friends");
         setIsSubmitting(false);
       }, 200);
       return () => clearTimeout(timer);
@@ -63,7 +69,7 @@ export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialog
             url: track.url,
           },
           thoughts: thoughts.trim(),
-          isPublic,
+          visibility,
         }),
       });
 
@@ -142,17 +148,43 @@ export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialog
               </div>
             </div>
 
-            {/* Visibility Toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="public-mode"
-                checked={isPublic}
-                onCheckedChange={setIsPublic}
-              />
-              <Label htmlFor="public-mode" className="flex items-center gap-2 cursor-pointer">
-                {isPublic ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                {isPublic ? "Public Post" : "Friends Only"}
-              </Label>
+            {/* Visibility Dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="visibility">Post Visibility</Label>
+              <Select value={visibility} onValueChange={(value: "public" | "friends" | "private") => setVisibility(value)}>
+                <SelectTrigger id="visibility" className="w-full">
+                  <div className="flex items-center gap-2">
+                    {visibility === "public" && <Globe className="h-4 w-4" />}
+                    {visibility === "friends" && <Users className="h-4 w-4" />}
+                    {visibility === "private" && <Lock className="h-4 w-4" />}
+                    <SelectValue>
+                      {visibility === "public" && "Public"}
+                      {visibility === "friends" && "Friends Only"}
+                      {visibility === "private" && "Private"}
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      <span>Public - Anyone can see this post</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="friends">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Friends Only - Only your friends can see this post</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      <span>Private - Only you can see this post</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Actions */}

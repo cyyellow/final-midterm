@@ -17,7 +17,7 @@ const createPostSchema = z.object({
   playlistImage: z.string().optional(),
   playlistTrackCount: z.number().optional(),
   thoughts: z.string().min(1).max(200),
-  isPublic: z.boolean().optional(),
+  visibility: z.enum(["public", "friends", "private"]).optional(),
 }).refine((data) => data.track || data.playlistId, {
   message: "Either track or playlistId must be provided",
 });
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const json = await request.json();
     const parsed = createPostSchema.parse(json);
-    const { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, isPublic } = parsed;
+    const { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, visibility } = parsed;
 
     // If a playlist is being shared, mark it as public so others can view it
     if (playlistId) {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       session.user.id,
       session.user.username || "Anonymous",
       session.user.image,
-      { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, isPublic }
+      { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, visibility }
     );
 
     return NextResponse.json(post, { status: 201 });

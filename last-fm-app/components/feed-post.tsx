@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import type { Post, Comment } from "@/types/post";
-import { Music, Globe, Lock, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical, Play, Heart } from "lucide-react";
+import { Music, Globe, Lock, Users, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical, Play, Heart } from "lucide-react";
 import { TrackLink } from "@/components/track-link";
 import { EditPostDialog } from "./edit-post-dialog";
 
@@ -258,8 +258,10 @@ export function FeedPost({ post }: FeedPostProps) {
             <span className="text-xs text-muted-foreground">
                   {new Date(currentPost.createdAt).toLocaleDateString()}
             </span>
-                {currentPost.isPublic ? (
+                {currentPost.visibility === "public" ? (
               <Globe className="h-3 w-3 text-muted-foreground" />
+            ) : currentPost.visibility === "friends" ? (
+              <Users className="h-3 w-3 text-muted-foreground" />
             ) : (
               <Lock className="h-3 w-3 text-muted-foreground" />
             )}

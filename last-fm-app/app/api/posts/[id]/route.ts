@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const updatePostSchema = z.object({
   thoughts: z.string().min(1).max(200),
-  isPublic: z.boolean().optional(),
+  visibility: z.enum(["public", "friends", "private"]).optional(),
 });
 
 export async function GET(
