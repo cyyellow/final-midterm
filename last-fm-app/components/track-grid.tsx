@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PostDetailDialog } from "./post-detail-dialog";
 import type { Post } from "@/types/post";
@@ -52,7 +52,7 @@ export function TrackGrid({ posts }: TrackGridProps) {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                      <span className="text-4xl">🎵</span>
+                      <Music2 className="h-8 w-8 text-primary/60" />
                     </div>
                   )}
                 </div>

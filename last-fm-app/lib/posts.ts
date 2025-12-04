@@ -62,12 +62,22 @@ export async function getPosts(limit = 100, currentUserId?: string): Promise<Pos
     .collection("posts")
     .find({
       $or: [
-        // Public posts from anyone
+        // Public posts from anyone (new format with visibility field)
         { visibility: "public" },
-        // Friends-only posts from friends or self
+        // Legacy public posts (old format with isPublic field)
+        { isPublic: true },
+        // Friends-only posts from friends or self (new format)
         {
           userId: { $in: allowedUserIds },
           visibility: "friends"
+        },
+        // Legacy friends-only posts (old format - isPublic is false or missing, and user is friend/self)
+        {
+          userId: { $in: allowedUserIds },
+          $and: [
+            { $or: [{ isPublic: false }, { isPublic: { $exists: false } }] },
+            { visibility: { $exists: false } }
+          ]
         },
         // Private posts only from self
         {

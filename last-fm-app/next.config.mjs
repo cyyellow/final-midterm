@@ -12,6 +12,11 @@ const nextConfig = {
         hostname: "lastfm-img2.akamaized.net",
         pathname: "/i/u/**",
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
     ],
   },
 };
