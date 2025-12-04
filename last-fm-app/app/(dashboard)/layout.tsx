@@ -44,12 +44,14 @@ export default async function DashboardLayout({
       friendStatuses={statuses}
       username={username || ""}
     >
-      <div className="flex bg-background text-foreground">
+      <div className="flex h-screen bg-background text-foreground overflow-hidden">
         <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 lg:flex">
           <Logo className="-ml-2 mb-6" />
           <LeftNav />
         </aside>
-        <main className="min-h-screen flex-1 pb-20 lg:pb-0">{children}</main>
+        <main className="flex-1 h-screen overflow-y-auto pb-20 lg:pb-0">
+          {children}
+        </main>
         <aside className="sticky top-0 hidden h-screen w-80 shrink-0 border-l border-sidebar-border bg-sidebar/60 p-4 xl:block">
           <RightSidebarContent
             nowPlaying={nowPlaying}

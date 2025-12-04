@@ -92,7 +92,7 @@ export function FriendsPageClient({ initialFriends }: { initialFriends: Friend[]
   });
 
   return (
-    <div className="flex flex-1 flex-col gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-6 lg:px-10">
+    <div className="flex flex-1 flex-col gap-6 bg-gradient-to-b from-background via-background to-secondary/10 p-6 lg:px-10 h-[calc(100vh-4rem)] overflow-y-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Friends</h1>

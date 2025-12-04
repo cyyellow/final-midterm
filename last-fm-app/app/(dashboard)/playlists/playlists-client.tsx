@@ -224,12 +224,15 @@ export function PlaylistsPageClient({ initialPlaylists }: { initialPlaylists: Pl
         </Card>
       )}
 
-      {/* Playlists Grid */}
+      {/* Playlists List */}
       {playlists.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-3">
           {playlists.map((playlist) => (
-            <Card key={playlist._id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <Card
+              key={playlist._id}
+              className="hover:bg-muted/60 transition-colors border border-border/60"
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   {playlist.image ? (
                     <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border">
