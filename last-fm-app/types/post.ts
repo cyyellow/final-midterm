@@ -28,7 +28,6 @@ export interface Post {
   likes?: number;
   isPublic?: boolean;
   comments?: Comment[];
-  commentCount?: number;
 }
 
 export interface CreatePostInput {

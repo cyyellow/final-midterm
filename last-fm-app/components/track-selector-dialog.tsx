@@ -32,6 +32,14 @@ export function TrackSelectorDialog({ open, onOpenChange }: TrackSelectorDialogP
     }
   }, [open, session]);
 
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedTrack(null);
+      setShowCreatePost(false);
+    }
+  }, [open]);
+
   const fetchTracks = async () => {
     if (!session?.user?.lastfmUsername) return;
 
@@ -51,8 +59,12 @@ export function TrackSelectorDialog({ open, onOpenChange }: TrackSelectorDialogP
 
   const handleSelectTrack = (track: LastfmTrack) => {
     setSelectedTrack(track);
-    setShowCreatePost(true);
+    // Close current dialog first, then open create post dialog
     onOpenChange(false);
+    // Use setTimeout to ensure the first dialog is fully closed
+    setTimeout(() => {
+      setShowCreatePost(true);
+    }, 150);
   };
 
   return (

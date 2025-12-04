@@ -55,8 +55,10 @@ export function EditPostDialog({
       if (res.ok) {
         const data = await res.json();
         onPostUpdated(data.post);
+        // Close dialog first - this is critical
         onOpenChange(false);
-        router.refresh();
+        // Don't refresh immediately - let the dialog fully close first
+        // The post is already updated via onPostUpdated callback
       } else {
         const error = await res.json();
         toast({

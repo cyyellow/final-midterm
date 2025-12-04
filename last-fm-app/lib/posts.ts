@@ -58,45 +58,16 @@ export async function getPosts(limit = 100, currentUserId?: string): Promise<Pos
   // Include self
   const allowedUserIds = [...friendIds, currentUserId];
 
-  // Use aggregation to include comment counts
   const posts = await db
     .collection("posts")
-    .aggregate([
-      {
-        $match: {
-          $or: [
-            { userId: { $in: allowedUserIds } },
-            { isPublic: true }
-          ]
-        }
-      },
-      {
-        $addFields: {
-          postIdString: { $toString: "$_id" }
-        }
-      },
-      {
-        $lookup: {
-          from: "comments",
-          localField: "postIdString",
-          foreignField: "postId",
-          as: "commentsList"
-        }
-      },
-      {
-        $addFields: {
-          commentCount: { $size: "$commentsList" }
-        }
-      },
-      {
-        $project: {
-          commentsList: 0,
-          postIdString: 0
-        }
-      },
-      { $sort: { createdAt: -1 } },
-      { $limit: limit }
-    ])
+    .find({
+      $or: [
+        { userId: { $in: allowedUserIds } },
+        { isPublic: true }
+      ]
+    })
+    .sort({ createdAt: -1 })
+    .limit(limit)
     .toArray();
 
   return posts.map((post) => ({
@@ -110,38 +81,11 @@ export async function getUserPosts(userId: string, limit = 100): Promise<Post[]>
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
-  // Use aggregation to include comment counts
   const posts = await db
     .collection("posts")
-    .aggregate([
-      { $match: { userId } },
-      {
-        $addFields: {
-          postIdString: { $toString: "$_id" }
-        }
-      },
-      {
-        $lookup: {
-          from: "comments",
-          localField: "postIdString",
-          foreignField: "postId",
-          as: "commentsList"
-        }
-      },
-      {
-        $addFields: {
-          commentCount: { $size: "$commentsList" }
-        }
-      },
-      {
-        $project: {
-          commentsList: 0,
-          postIdString: 0
-        }
-      },
-      { $sort: { createdAt: -1 } },
-      { $limit: limit }
-    ])
+    .find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
     .toArray();
 
   return posts.map((post) => ({
