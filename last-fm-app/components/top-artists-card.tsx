@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import type { LastfmArtist } from "@/lib/lastfm";
-import { Trophy } from "lucide-react";
+import { Trophy, ChevronDown } from "lucide-react";
 
 function ArtistAvatar({ artist, albumImage }: { artist: LastfmArtist; albumImage?: string | null }) {
   const [hasError, setHasError] = useState(false);
@@ -62,6 +63,7 @@ function ArtistAvatar({ artist, albumImage }: { artist: LastfmArtist; albumImage
 export function TopArtistsCard({ artists }: { artists: LastfmArtist[] }) {
   const [albumImages, setAlbumImages] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     const fetchAlbumImages = async () => {
@@ -144,38 +146,55 @@ export function TopArtistsCard({ artists }: { artists: LastfmArtist[] }) {
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-yellow-500" />
-          <CardTitle className="text-base">Top Artists (Last 7 Days)</CardTitle>
+      <CardHeader 
+        className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-base">Top Artists (Last 7 Days)</CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isExpanded && artists.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {artists.length} artists
+              </span>
+            )}
+            <ChevronDown 
+              className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            />
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {artists.slice(0, 5).map((artist, index) => (
-            <div key={artist.name} className="flex items-center gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                {index + 1}
+      {isExpanded && (
+        <CardContent>
+          <div className="space-y-4">
+            {artists.slice(0, 5).map((artist, index) => (
+              <div key={artist.name} className="flex items-center gap-3">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                  {index + 1}
+                </div>
+                <ArtistAvatar 
+                  artist={artist} 
+                  albumImage={loading ? undefined : albumImages[artist.name]}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{artist.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {parseInt(artist.playcount).toLocaleString()} plays
+                  </p>
+                </div>
               </div>
-              <ArtistAvatar 
-                artist={artist} 
-                albumImage={loading ? undefined : albumImages[artist.name]}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{artist.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {parseInt(artist.playcount).toLocaleString()} plays
-                </p>
-              </div>
-            </div>
-          ))}
-          {artists.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground py-4">
-              No listening data yet.
-            </p>
-          )}
-        </div>
-      </CardContent>
+            ))}
+            {artists.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-4">
+                No listening data yet.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      )}
     </Card>
   );
 }

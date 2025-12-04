@@ -143,6 +143,18 @@ export function SharePlaylistDialog({ open, onOpenChange, playlist }: SharePlayl
 
     setIsSubmitting(true);
     try {
+      // Update playlist permissions if owner
+      if (isOwner) {
+        await fetch(`/api/playlists/${playlist._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            isPublic,
+            allowPublicEdit: isPublic ? allowPublicEdit : false,
+          }),
+        });
+      }
+
       const message = thoughts.trim() 
         ? thoughts.trim()
         : `Check out my playlist: ${playlist.name}`;
@@ -163,10 +175,15 @@ export function SharePlaylistDialog({ open, onOpenChange, playlist }: SharePlayl
 
       if (res.ok) {
         toast({ title: "Playlist shared in chat!" });
+        const friendId = selectedFriendId; // Save before resetting
+        // Close dialog first
         onOpenChange(false);
         setThoughts("");
         setSelectedFriendId("");
-        router.push(`/chat?friend=${selectedFriendId}`);
+        // Delay navigation to ensure dialog is fully closed and overlay is removed
+        setTimeout(() => {
+          router.push(`/chat?friend=${friendId}`);
+        }, 300);
       } else {
         const error = await res.json();
         toast({
@@ -188,6 +205,18 @@ export function SharePlaylistDialog({ open, onOpenChange, playlist }: SharePlayl
   const handleShareToSociety = async () => {
     setIsSubmitting(true);
     try {
+      // Update playlist permissions if owner
+      if (isOwner) {
+        await fetch(`/api/playlists/${playlist._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            isPublic,
+            allowPublicEdit: isPublic ? allowPublicEdit : false,
+          }),
+        });
+      }
+
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,10 +232,13 @@ export function SharePlaylistDialog({ open, onOpenChange, playlist }: SharePlayl
 
       if (res.ok) {
         toast({ title: "Playlist shared to My Society!" });
+        // Close dialog first
         onOpenChange(false);
         setThoughts("");
-        setIsPublic(false);
-        router.refresh();
+        // Delay refresh to ensure dialog is fully closed and overlay is removed
+        setTimeout(() => {
+          router.refresh();
+        }, 300);
       } else {
         const error = await res.json();
         toast({
@@ -236,6 +268,90 @@ export function SharePlaylistDialog({ open, onOpenChange, playlist }: SharePlayl
             Share "{playlist.name}" with your friends
           </DialogDescription>
         </DialogHeader>
+
+        {/* Permissions Section - Moved to top */}
+        {isOwner && (
+          <div className="space-y-3 pb-4 border-b">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">一般存取權 (General Access)</Label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {isPublic ? (
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="text-sm">
+                      {isPublic ? "知道連結的任何人" : "僅限擁有者"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="share-isPublic"
+                      checked={isPublic}
+                      onChange={(e) => {
+                        setIsPublic(e.target.checked);
+                        if (!e.target.checked) {
+                          setAllowPublicEdit(false);
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <Label htmlFor="share-isPublic" className="text-sm cursor-pointer">
+                      {isPublic ? "公開" : "私人"}
+                    </Label>
+                  </div>
+                </div>
+                {isPublic && (
+                  <div className="ml-6 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Edit2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">編輯權限</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="share-allowPublicEdit"
+                          checked={allowPublicEdit}
+                          onChange={(e) => setAllowPublicEdit(e.target.checked)}
+                          className="rounded"
+                        />
+                        <Label htmlFor="share-allowPublicEdit" className="text-sm cursor-pointer">
+                          {allowPublicEdit ? "任何人都可編輯" : "僅限擁有者"}
+                        </Label>
+                      </div>
+                    </div>
+                    {allowPublicEdit && (
+                      <p className="text-xs text-muted-foreground ml-6">
+                        任何知道這個連結的網際網路使用者都能編輯
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={handleUpdatePermissions}
+              disabled={isUpdatingPermissions}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              {isUpdatingPermissions ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  更新中...
+                </>
+              ) : (
+                "更新權限"
+              )}
+            </Button>
+          </div>
+        )}
 
         <Tabs value={shareMethod} onValueChange={(v) => setShareMethod(v as typeof shareMethod)} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -280,88 +396,6 @@ export function SharePlaylistDialog({ open, onOpenChange, playlist }: SharePlayl
                 </Button>
               </div>
             </div>
-            {isOwner && (
-              <div className="space-y-3 pt-4 border-t">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">一般存取權 (General Access)</Label>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {isPublic ? (
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <span className="text-sm">
-                          {isPublic ? "知道連結的任何人" : "僅限擁有者"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="share-isPublic"
-                          checked={isPublic}
-                          onChange={(e) => {
-                            setIsPublic(e.target.checked);
-                            if (!e.target.checked) {
-                              setAllowPublicEdit(false);
-                            }
-                          }}
-                          className="rounded"
-                        />
-                        <Label htmlFor="share-isPublic" className="text-sm cursor-pointer">
-                          {isPublic ? "公開" : "私人"}
-                        </Label>
-                      </div>
-                    </div>
-                    {isPublic && (
-                      <div className="ml-6 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Edit2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">編輯權限</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id="share-allowPublicEdit"
-                              checked={allowPublicEdit}
-                              onChange={(e) => setAllowPublicEdit(e.target.checked)}
-                              className="rounded"
-                            />
-                            <Label htmlFor="share-allowPublicEdit" className="text-sm cursor-pointer">
-                              {allowPublicEdit ? "任何人都可編輯" : "僅限擁有者"}
-                            </Label>
-                          </div>
-                        </div>
-                        {allowPublicEdit && (
-                          <p className="text-xs text-muted-foreground ml-6">
-                            任何知道這個連結的網際網路使用者都能編輯
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  onClick={handleUpdatePermissions}
-                  disabled={isUpdatingPermissions}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                >
-                  {isUpdatingPermissions ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      更新中...
-                    </>
-                  ) : (
-                    "更新權限"
-                  )}
-                </Button>
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="chat" className="space-y-4 mt-4">
@@ -445,18 +479,6 @@ export function SharePlaylistDialog({ open, onOpenChange, playlist }: SharePlayl
               <p className="text-xs text-muted-foreground">
                 {200 - thoughts.length} characters remaining
               </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isPublic"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="isPublic" className="text-sm cursor-pointer">
-                Make this post public
-              </Label>
             </div>
             <Button
               onClick={handleShareToSociety}

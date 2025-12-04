@@ -56,10 +56,10 @@ export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) 
       const pusher = getPusherClient();
       
       if (pusher) {
-        // Private chat channel name logic: private-{sortedIds}
-        // The backend triggers on `chat-{chatId}`. We need to construct chatId.
-        const sortedIds = [currentUserId, selectedChatId].sort();
-        const chatId = `private-${sortedIds[0]}-${sortedIds[1]}`;
+          // Private chat channel name logic: private-{sortedIds}
+          // The backend triggers on `chat-{chatId}`. We need to construct chatId.
+          const sortedIds = [currentUserId, selectedChatId].sort();
+          const chatId = `private-${sortedIds[0]}-${sortedIds[1]}`;
         const channelName = `chat-${chatId}`;
 
         const channel = pusher.subscribe(channelName);
@@ -253,15 +253,15 @@ export function ChatPageClient({ friends, currentUserId }: ChatPageClientProps) 
                           </span>
                         </div>
                         <div className="space-y-2">
-                          {msg.message && !msg.message.match(/https?:\/\/[^\s]+/g) && (
-                            <div
-                              className={`px-4 py-2 rounded-2xl text-sm ${
-                                msg.userId === currentUserId
-                                  ? "bg-primary text-primary-foreground rounded-tr-none"
-                                  : "bg-muted text-foreground rounded-tl-none"
-                              }`}
-                            >
-                              {msg.message}
+                          {msg.message && (
+                        <div
+                          className={`px-4 py-2 rounded-2xl text-sm ${
+                            msg.userId === currentUserId
+                              ? "bg-primary text-primary-foreground rounded-tr-none"
+                              : "bg-muted text-foreground rounded-tl-none"
+                          }`}
+                        >
+                          {msg.message}
                             </div>
                           )}
                           {msg.playlistPreview && (

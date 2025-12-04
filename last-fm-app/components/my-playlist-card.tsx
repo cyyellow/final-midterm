@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Plus, Trash2, Music } from "lucide-react";
+import { Plus, Trash2, Music, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -50,6 +50,7 @@ type MyPlaylistCardProps = {
 export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }: MyPlaylistCardProps) {
   const [playlist, setPlaylist] = useState<Playlist | null>(initialPlaylist);
   const [loading, setLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
@@ -189,41 +190,95 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
     }
   };
 
+  // Get playlist cover image (use first track's image or a gradient)
+  const playlistCover = playlist?.tracks?.[0]?.image;
+
   return (
     <Card className="h-full flex flex-col overflow-hidden">
-      <CardHeader className="pb-3 flex-shrink-0">
+      <CardHeader 
+        className="pb-3 flex-shrink-0"
+      >
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div 
+            className="flex items-center gap-2 flex-1 cursor-pointer hover:bg-muted/50 transition-colors rounded px-2 py-1 -mx-2 -my-1"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
             <Music className="h-4 w-4 text-primary" />
             <CardTitle className="text-base">
               {playlist?.name || "My Playlist"}
             </CardTitle>
           </div>
-          {isMounted && allPlaylists && allPlaylists.length > 1 && (
-            <Select
-              value={playlist?._id || ""}
-              onValueChange={handleSwitchPlaylist}
-              disabled={isSwitching}
+          <div className="flex items-center gap-2">
+            {isMounted && allPlaylists && allPlaylists.length > 1 && (
+              <Select
+                value={playlist?._id || ""}
+                onValueChange={handleSwitchPlaylist}
+                disabled={isSwitching}
+              >
+                <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectValue placeholder="Switch playlist" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allPlaylists.map((p) => (
+                    <SelectItem key={p._id} value={p._id}>
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{p.name}</span>
+                        {p.isPinned && (
+                          <span className="text-primary text-[10px]">📌</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {!isExpanded && playlist && playlist.tracks.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {playlist.tracks.length} {playlist.tracks.length === 1 ? 'track' : 'tracks'}
+              </span>
+            )}
+            <div 
+              className="cursor-pointer hover:bg-muted/50 transition-colors rounded p-1"
+              onClick={() => setIsExpanded(!isExpanded)}
             >
-              <SelectTrigger className="h-8 w-[140px] text-xs">
-                <SelectValue placeholder="Switch playlist" />
-              </SelectTrigger>
-              <SelectContent>
-                {allPlaylists.map((p) => (
-                  <SelectItem key={p._id} value={p._id}>
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{p.name}</span>
-                      {p.isPinned && (
-                        <span className="text-primary text-[10px]">📌</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+              <ChevronDown 
+                className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              />
+            </div>
+          </div>
         </div>
       </CardHeader>
+      {isExpanded && (
+        <>
+      {/* Spotify-style header with large cover */}
+      {playlist && playlist.tracks.length > 0 && (
+        <div className="relative h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-background overflow-hidden">
+          <div className="absolute inset-0 flex items-center gap-4 p-4">
+            <div className="relative h-24 w-24 flex-shrink-0 rounded-md shadow-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
+              {playlistCover ? (
+                <Image
+                  src={playlistCover}
+                  alt={playlist.name}
+                  fill
+                  className="object-cover"
+                  sizes="96px"
+                  onError={() => {}}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <Music className="h-10 w-10 text-primary/60" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold truncate">{playlist.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                {playlist.tracks.length} {playlist.tracks.length === 1 ? 'song' : 'songs'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <CardContent className="flex-1 min-h-0 overflow-hidden p-0">
         <ScrollArea className="h-[300px] px-4">
           {playlist && playlist.tracks.length > 0 ? (
@@ -287,6 +342,8 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
           )}
         </ScrollArea>
       </CardContent>
+        </>
+      )}
     </Card>
   );
 }

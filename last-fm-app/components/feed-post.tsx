@@ -39,7 +39,6 @@ export function FeedPost({ post }: FeedPostProps) {
   const [editingCommentContent, setEditingCommentContent] = useState("");
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
   const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null);
-  const [commentCount, setCommentCount] = useState(post.commentCount ?? 0);
 
   const isOwner = session?.user?.id === post.userId;
 
@@ -79,7 +78,6 @@ export function FeedPost({ post }: FeedPostProps) {
       if (res.ok) {
         const data = await res.json();
         setComments([...comments, data]);
-        setCommentCount(prev => prev + 1);
         setCommentInput("");
         toast({ title: "Comment added" });
       } else {
@@ -185,7 +183,6 @@ export function FeedPost({ post }: FeedPostProps) {
 
       if (res.ok) {
         setComments(comments.filter(c => c._id !== commentId));
-        setCommentCount(prev => Math.max(0, prev - 1));
         toast({ title: "Comment deleted" });
       } else {
         toast({
@@ -325,7 +322,7 @@ export function FeedPost({ post }: FeedPostProps) {
           >
             <MessageSquare className="h-4 w-4" />
             <span className="text-xs">
-              {commentCount > 0 ? `${commentCount} comment${commentCount > 1 ? "s" : ""}` : "Comment"}
+              {comments.length > 0 ? `${comments.length} comment${comments.length > 1 ? "s" : ""}` : "Comment"}
             </span>
           </Button>
 

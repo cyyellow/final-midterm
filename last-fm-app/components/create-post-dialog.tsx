@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Globe, Lock } from "lucide-react";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/use-toast";
 import type { LastfmTrack } from "@/lib/lastfm";
 
 interface CreatePostDialogProps {
@@ -29,6 +30,21 @@ export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialog
   const [isPublic, setIsPublic] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      // Reset all state when dialog closes
+      // Use a small delay to ensure dialog animation completes
+      const timer = setTimeout(() => {
+        setThoughts("");
+        setIsPublic(false);
+        setIsSubmitting(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!track || !thoughts.trim()) return;
@@ -52,10 +68,19 @@ export function CreatePostDialog({ open, onOpenChange, track }: CreatePostDialog
       });
 
       if (response.ok) {
-        setThoughts("");
-        setIsPublic(false);
+        toast({ title: "Post created successfully!" });
+        // Close dialog first - this is critical
         onOpenChange(false);
-        router.refresh();
+        // Don't refresh immediately - let the dialog fully close first
+        // The user can manually refresh or navigate to see the new post
+        // This prevents the overlay from blocking interactions
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Failed to create post",
+          description: error.error || "Something went wrong",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Failed to create post:", error);
