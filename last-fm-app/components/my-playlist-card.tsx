@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Plus, Trash2, Music, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Music, ChevronDown, Play } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AddTracksSection } from "@/components/add-tracks-section";
+import { TrackLink } from "@/components/track-link";
 import type { Playlist, PlaylistTrack } from "@/lib/playlist";
 import type { LastfmTrack } from "@/lib/lastfm";
 import { useToast } from "@/components/ui/use-toast";
@@ -288,7 +289,14 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
                   key={`${track.url}-${i}`} 
                   className="flex items-center gap-3 p-2 rounded-md group hover:bg-muted/50 transition-colors"
                 >
-                  <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
+                  <TrackLink
+                    track={{
+                      name: track.name,
+                      artist: track.artist,
+                      url: track.url,
+                    }}
+                    className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm cursor-pointer"
+                  >
                     {track.image && track.image.trim() !== "" ? (
                       <Image
                         src={track.image}
@@ -303,16 +311,21 @@ export function MyPlaylistCard({ initialPlaylist, allPlaylists = [], username }:
                         <Music className="h-6 w-6 text-primary/60" />
                       </div>
                     )}
-                  </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="h-5 w-5 text-white fill-white" />
+                    </div>
+                  </TrackLink>
                   <div className="min-w-0 flex-1">
-                    <a 
-                      href={track.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
+                    <TrackLink
+                      track={{
+                        name: track.name,
+                        artist: track.artist,
+                        url: track.url,
+                      }}
                       className="truncate text-sm font-medium hover:text-primary transition-colors block"
                     >
                       {track.name}
-                    </a>
+                    </TrackLink>
                     <p className="truncate text-xs text-muted-foreground">
                       {track.artist}
                     </p>

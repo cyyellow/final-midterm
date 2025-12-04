@@ -16,8 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import type { Post, Comment } from "@/types/post";
-import { Music, Globe, Lock, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical } from "lucide-react";
-import { getMusicLink } from "@/lib/music-links";
+import { Music, Globe, Lock, ListMusic, Edit2, Trash2, MessageSquare, Send, Loader2, MoreVertical, Play } from "lucide-react";
+import { TrackLink } from "@/components/track-link";
 import { EditPostDialog } from "./edit-post-dialog";
 
 interface FeedPostProps {
@@ -279,11 +279,13 @@ export function FeedPost({ post }: FeedPostProps) {
           </div>
         </Link>
         ) : currentPost.track ? (
-        <a
-            href={getMusicLink(currentPost.track)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+        <TrackLink
+          track={{
+            name: currentPost.track.name,
+            artist: currentPost.track.artist,
+            url: currentPost.track.url,
+          }}
+          className="group flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
               {currentPost.track.image ? (
@@ -297,6 +299,9 @@ export function FeedPost({ post }: FeedPostProps) {
                 <Music className="h-8 w-8 text-muted-foreground" />
               </div>
             )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Play className="h-6 w-6 text-white fill-white" />
+            </div>
           </div>
           <div className="min-w-0 flex-1">
               <p className="font-medium">{currentPost.track.name}</p>
@@ -305,7 +310,7 @@ export function FeedPost({ post }: FeedPostProps) {
                 <p className="text-xs text-muted-foreground">{currentPost.track.album}</p>
             )}
           </div>
-        </a>
+        </TrackLink>
       ) : null}
 
         {currentPost.thoughts && (

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Plus, Trash2, Music, Edit2, Save, X, Upload, Users, Lock, Unlock, Share2, Copy, Globe } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Music, Edit2, Save, X, Upload, Users, Lock, Unlock, Share2, Copy, Globe, Play } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUploadCrop } from "@/components/image-upload-crop";
 import { SharePlaylistDialog } from "@/components/share-playlist-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TrackLink } from "@/components/track-link";
 import type { Playlist, PlaylistTrack, PlaylistPermission } from "@/lib/playlist";
 import type { LastfmTrack } from "@/lib/lastfm";
 
@@ -396,7 +397,14 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
                   <div className="space-y-3">
                     {playlist.tracks.map((track, i) => (
                       <div key={`${track.url}-${i}`} className="flex items-center gap-3 group">
-                        <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
+                        <TrackLink
+                          track={{
+                            name: track.name,
+                            artist: track.artist,
+                            url: track.url,
+                          }}
+                          className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm cursor-pointer"
+                        >
                           {track.image && track.image.trim() !== "" ? (
                             <Image
                               src={track.image}
@@ -411,16 +419,21 @@ export function PlaylistDetailClient({ initialPlaylist, username, canEdit, isOwn
                               <Music className="h-6 w-6 text-primary/60" />
                             </div>
                           )}
-                        </div>
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="h-5 w-5 text-white fill-white" />
+                          </div>
+                        </TrackLink>
                         <div className="min-w-0 flex-1">
-                          <a 
-                            href={track.url || "#"} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                          <TrackLink
+                            track={{
+                              name: track.name,
+                              artist: track.artist,
+                              url: track.url,
+                            }}
                             className="truncate text-sm font-medium hover:underline block"
                           >
                             {track.name}
-                          </a>
+                          </TrackLink>
                           <p className="truncate text-xs text-muted-foreground">
                             {track.artist}
                           </p>

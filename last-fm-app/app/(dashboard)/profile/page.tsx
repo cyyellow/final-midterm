@@ -8,7 +8,8 @@ import { getUserPosts } from "@/lib/posts";
 import { TrackGrid } from "@/components/track-grid";
 import { EditProfileDialog } from "@/components/edit-profile-dialog";
 import { TrackImage } from "@/components/track-image";
-import { getMusicLink } from "@/lib/music-links";
+import { TrackLink } from "@/components/track-link";
+import { Play } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -89,21 +90,28 @@ export default async function ProfilePage() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {user.favoriteTracks.map((track, i) => (
-                  <a
+                  <TrackLink
                     key={i}
-                    href={getMusicLink(track)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background transition-colors border border-transparent hover:border-border"
+                    track={{
+                      name: track.name,
+                      artist: track.artist,
+                      url: track.url,
+                    }}
+                    className="group flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background transition-colors border border-transparent hover:border-border"
                   >
                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
-                      <TrackImage src={track.image} alt={track.name} />
+                      <div className="absolute inset-0">
+                        <TrackImage src={track.image} alt={track.name} />
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Play className="h-4 w-4 text-white fill-white" />
+                      </div>
                     </div>
                     <div className="min-w-0 overflow-hidden">
                       <p className="truncate text-sm font-medium">{track.name}</p>
                       <p className="truncate text-xs text-muted-foreground">{track.artist}</p>
                     </div>
-                  </a>
+                  </TrackLink>
                 ))}
               </div>
             </div>

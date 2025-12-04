@@ -1,14 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Post } from "@/types/post";
-import { getMusicLink } from "@/lib/music-links";
+import { TrackLink } from "@/components/track-link";
 
 interface PostDetailDialogProps {
   post: Post | null;
@@ -57,13 +53,18 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
               </div>
             )}
             <div className="flex flex-col justify-center">
-              <a
-                href={getMusicLink(post.track)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <TrackLink
+                track={{
+                  name: post.track.name,
+                  artist: post.track.artist,
+                  // @ts-expect-error Some track types may not have url but it's optional
+                  url: post.track.url,
+                }}
                 className="group"
               >
-                <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{post.track.name}</h3>
+                <h3 className="text-xl font-bold group-hover:text-primary transition-colors">
+                  {post.track.name}
+                </h3>
                 <p className="text-lg text-muted-foreground">{post.track.artist}</p>
                 {post.track.album && (
                   <p className="mt-1 text-sm text-muted-foreground">{post.track.album}</p>
@@ -71,7 +72,7 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
                 <p className="mt-2 text-sm text-primary hover:underline">
                   Listen on YouTube →
                 </p>
-              </a>
+              </TrackLink>
             </div>
           </div>
 

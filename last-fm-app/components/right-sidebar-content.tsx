@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Music2, Send, Plus, MoreVertical } from "lucide-react";
+import { Music2, Send, Plus, MoreVertical, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LastfmTrack } from "@/lib/lastfm";
@@ -16,6 +16,7 @@ import type { Playlist } from "@/lib/playlist";
 import { AddTracksSection } from "./add-tracks-section";
 import { CreatePostDialog } from "./create-post-dialog";
 import { FriendsWidget } from "./friends-widget";
+import { TrackLink } from "./track-link";
 import type { FriendStatus } from "./right-status";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -323,10 +324,31 @@ export function RightSidebarContent({
             </div>
           </CardHeader>
           <CardContent className="px-3 pb-3">
-            <div className="flex gap-2">
-              <NowPlayingImage track={nowPlaying} />
+            <div className="flex gap-2 group">
+              <TrackLink
+                track={{
+                  name: nowPlaying.name,
+                  artist: nowPlaying.artist["#text"],
+                  url: nowPlaying.url,
+                }}
+                className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md bg-gradient-to-br from-primary/20 to-primary/5 cursor-pointer"
+              >
+                <NowPlayingImage track={nowPlaying} />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <Play className="h-5 w-5 text-white fill-white" />
+                </div>
+              </TrackLink>
               <div className="min-w-0 flex-1">
-                <h3 className="line-clamp-2 text-xs font-semibold leading-tight">{nowPlaying.name}</h3>
+                <TrackLink
+                  track={{
+                    name: nowPlaying.name,
+                    artist: nowPlaying.artist["#text"],
+                    url: nowPlaying.url,
+                  }}
+                  className="line-clamp-2 text-xs font-semibold leading-tight hover:underline block"
+                >
+                  {nowPlaying.name}
+                </TrackLink>
                 <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{nowPlaying.artist["#text"]}</p>
                 {nowPlaying.album?.["#text"] && (
                   <p className="mt-0.5 truncate text-[10px] text-muted-foreground/70">
@@ -382,7 +404,7 @@ function HistoryTrackImage({ track }: { track: LastfmTrack }) {
   const showImage = trackImage && trackImage.trim() !== "" && !hasError;
   
   return (
-    <div className="relative h-6 w-6 flex-shrink-0 overflow-hidden rounded bg-gradient-to-br from-primary/20 to-primary/5">
+    <>
       {showImage ? (
         <Image
           src={trackImage}
@@ -397,7 +419,7 @@ function HistoryTrackImage({ track }: { track: LastfmTrack }) {
           <Music2 className="h-3 w-3 text-primary/60" />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -411,7 +433,7 @@ function NowPlayingImage({ track }: { track: LastfmTrack }) {
   const showImage = imageUrl && imageUrl.trim() !== "" && !hasError;
   
   return (
-    <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-md bg-gradient-to-br from-primary/20 to-primary/5">
+    <>
       {showImage ? (
         <Image
           src={imageUrl}
@@ -426,7 +448,7 @@ function NowPlayingImage({ track }: { track: LastfmTrack }) {
           <Music2 className="h-6 w-6 text-primary/60" />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -499,16 +521,30 @@ function HistoryTracksList({ tracks, playlists }: { tracks: LastfmTrack[]; playl
             key={`${track.name}-${index}`}
             className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
           >
-            <HistoryTrackImage track={track} />
+            <TrackLink
+              track={{
+                name: track.name,
+                artist: track.artist?.["#text"] ?? "Unknown Artist",
+                url: track.url,
+              }}
+              className="relative h-6 w-6 flex-shrink-0 overflow-hidden rounded bg-gradient-to-br from-primary/20 to-primary/5 cursor-pointer"
+            >
+              <HistoryTrackImage track={track} />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <Play className="h-3 w-3 text-white fill-white" />
+              </div>
+            </TrackLink>
             <div className="flex-1 min-w-0">
-              <Link
-                href={track.url}
-                target="_blank"
-                rel="noreferrer"
+              <TrackLink
+                track={{
+                  name: track.name,
+                  artist: track.artist?.["#text"] ?? "Unknown Artist",
+                  url: track.url,
+                }}
                 className="block truncate text-xs font-medium text-foreground hover:underline max-w-[160px]"
               >
                 {track.name}
-              </Link>
+              </TrackLink>
               <div className="flex items-center gap-1.5">
                 <p className="flex-1 truncate text-[11px] text-muted-foreground max-w-[160px]">
                   {track.artist?.["#text"] ?? "Unknown Artist"}
