@@ -127,10 +127,76 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
   const db = client.db(process.env.MONGODB_DB);
 
   // If viewing own profile, show all posts including private ones
-  // If viewing someone else's profile, exclude private posts
-  const query: any = { userId };
-  if (currentUserId !== userId) {
-    query.visibility = { $ne: "private" };
+  if (currentUserId === userId) {
+    const query: any = { userId };
+    const posts = await db
+      .collection("posts")
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray();
+
+    // Process posts and update playlistImage if needed
+    const processedPosts = await Promise.all(
+      posts.map(async (post) => {
+        if (post.playlistId && !post.playlistImage) {
+          try {
+            const playlist = await getPlaylistByIdPublic(post.playlistId);
+            if (playlist && playlist.tracks && playlist.tracks.length > 0) {
+              const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
+              if (trackWithImage?.image) {
+                post.playlistImage = trackWithImage.image;
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching playlist for post:", error);
+          }
+        }
+        
+        return {
+          ...post,
+          _id: post._id.toString(),
+          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+        } as Post;
+      })
+    );
+
+    return processedPosts;
+  }
+
+  // If viewing someone else's profile, check if they are friends
+  let isFriend = false;
+  if (currentUserId) {
+    const { getFriends } = await import("./friends");
+    const friends = await getFriends(currentUserId);
+    isFriend = friends.some(f => f.id === userId);
+  }
+
+  // Build query based on friendship
+  let query: any;
+  
+  if (isFriend) {
+    // Friends can see public and friends-only posts, but not private
+    query = {
+      userId,
+      $or: [
+        { visibility: "public" },
+        { visibility: "friends" },
+        // Legacy posts (isPublic: true or false/missing)
+        { isPublic: true },
+        { $and: [{ $or: [{ isPublic: false }, { isPublic: { $exists: false } }] }, { visibility: { $exists: false } }] }
+      ]
+    };
+  } else {
+    // Non-friends can only see public posts
+    query = {
+      userId,
+      $or: [
+        { visibility: "public" },
+        // Legacy public posts
+        { isPublic: true }
+      ]
+    };
   }
 
   const posts = await db

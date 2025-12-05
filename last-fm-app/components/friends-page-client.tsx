@@ -132,7 +132,7 @@ export function FriendsPageClient({ initialFriends }: { initialFriends: Friend[]
           {filteredFriends.map((friend) => (
             <Link
               key={friend.id}
-              href={`/profile/${friend.id}`}
+              href={`/profile/${encodeURIComponent(friend.username)}`}
               className="block"
             >
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">

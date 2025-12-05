@@ -10,6 +10,7 @@ export type FriendStatus = {
   trackName?: string | null;
   artistName?: string | null;
   isListening: boolean;
+  lastfmUsername?: string | null;
 };
 
 type RightStatusProps = {

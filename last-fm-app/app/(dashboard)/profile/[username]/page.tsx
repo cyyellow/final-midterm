@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { Disc } from "lucide-react";
+import Link from "next/link";
+import { Disc, UserRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getAuthSession } from "@/lib/auth";
-import { getUserById } from "@/lib/users";
+import { getUserByUsername } from "@/lib/users";
 import { getUserPosts } from "@/lib/posts";
 import { TrackGrid } from "@/components/track-grid";
 import { Music } from "lucide-react";
@@ -14,27 +15,49 @@ export const dynamic = "force-dynamic";
 export default async function UserProfilePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ username: string }>;
 }) {
   const session = await getAuthSession();
-  const { id } = await params;
+  const { username } = await params;
 
   if (!session?.user) {
     redirect("/signin");
   }
 
+  // Decode URL-encoded username
+  const decodedUsername = decodeURIComponent(username);
+
   // If viewing own profile, redirect to /profile
-  if (id === session.user.id) {
+  if (decodedUsername === session.user.username) {
     redirect("/profile");
   }
 
-  const user = await getUserById(id);
+  const user = await getUserByUsername(decodedUsername);
   
   if (!user) {
-    redirect("/");
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
+        <Card className="border-dashed max-w-md w-full">
+          <CardContent className="flex flex-col items-center justify-center min-h-[300px] text-center p-6">
+            <UserRound className="h-16 w-16 text-muted-foreground mb-4 opacity-50" />
+            <CardTitle className="text-2xl font-bold mb-2">User Not Found</CardTitle>
+            <p className="text-muted-foreground mb-4">
+              The user <span className="font-mono font-medium">@{decodedUsername}</span> does not exist.
+            </p>
+            <Link
+              href="/"
+              className="text-sm text-primary hover:underline"
+            >
+              ← Back to Home
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
-  const posts = await getUserPosts(id, 100, session.user.id);
+  const userId = user._id.toString();
+  const posts = await getUserPosts(userId, 100, session.user.id);
 
   // Group posts by week (Monday to Sunday)
   const postsByWeek = posts.reduce((acc, post) => {
@@ -80,7 +103,7 @@ export default async function UserProfilePage({
                   {user?.displayName || user?.username || "Anonymous"}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  @{user?.lastfmUsername || user?.username}
+                  @{user?.username}
                 </p>
                 {user?.bio && (
                   <p className="mt-2 text-sm max-w-md">

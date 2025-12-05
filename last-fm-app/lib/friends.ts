@@ -82,6 +82,7 @@ export async function getFriendStatuses(userId: string): Promise<FriendStatus[]>
         trackName: nowPlaying?.name ?? null,
         artistName: nowPlaying?.artist?.["#text"] ?? null,
         isListening: Boolean(nowPlaying),
+        lastfmUsername: lastfmUsername ?? null,
       };
     }),
   );

@@ -67,6 +67,12 @@ export async function getUserById(userId: string) {
   return collection.findOne(filters);
 }
 
+export async function getUserByUsername(username: string) {
+  const collection = await getUsersCollection();
+  const usernameLower = normalizeUsername(username);
+  return collection.findOne({ usernameLower });
+}
+
 export async function isUsernameAvailable(username: string) {
   const collection = await getUsersCollection();
   const usernameLower = normalizeUsername(username);

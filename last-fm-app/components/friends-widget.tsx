@@ -46,7 +46,7 @@ export function FriendsWidget({ friendStatuses }: FriendsWidgetProps) {
                 {displayFriends.map((friend) => (
                   <Link
                     key={friend.id}
-                    href={`/profile/${friend.id}`}
+                    href={`/profile/${encodeURIComponent(friend.username)}`}
                     className="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50 transition-colors group"
                   >
                     <div className="relative">
