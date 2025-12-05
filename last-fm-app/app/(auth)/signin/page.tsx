@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SignInButton } from "@/components/sign-in-button";
@@ -32,17 +31,6 @@ export default async function SignInPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <SignInButton />
-            <p className="text-xs text-muted-foreground">
-              By signing in, you agree to our{" "}
-              <Link href="#" className="text-primary hover:underline">
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link href="#" className="text-primary hover:underline">
-                Privacy Policy
-              </Link>
-              .
-            </p>
           </CardContent>
         </Card>
         <div className="flex justify-center">
