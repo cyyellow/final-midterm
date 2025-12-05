@@ -55,6 +55,15 @@ export function TestingInstructionsDialog() {
           </div>
 
           <div className="space-y-2">
+            <h3 className="font-semibold text-foreground">限制</h3>
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-md p-4">
+              <p className="text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
+                此測試帳號已包含一些我們預先處理的歌曲資料。若您想測試實際的聆聽記錄/scrobble 功能，請參考下方的指南設定 scrobble。
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <h3 className="font-semibold text-foreground">2. Scrobble 功能測試指南</h3>
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">
               如果您想測試 scrobble 功能，可以參考以下方式連接不同平台：
