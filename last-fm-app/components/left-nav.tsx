@@ -8,7 +8,6 @@ import {
   UserRound,
   UsersRound,
   LogOut,
-  UserPlus,
   MessageSquare,
   Music,
 } from "lucide-react";
@@ -41,11 +40,6 @@ const navItems = [
     title: "Playlists",
     href: "/playlists",
     icon: Music,
-  },
-  {
-    title: "Friends",
-    href: "/friends",
-    icon: UserPlus,
   },
 ];
 

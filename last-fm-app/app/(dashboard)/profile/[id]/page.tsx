@@ -7,8 +7,7 @@ import { getUserById } from "@/lib/users";
 import { getUserPosts } from "@/lib/posts";
 import { TrackGrid } from "@/components/track-grid";
 import { Music } from "lucide-react";
-import { TrackImage } from "@/components/track-image";
-import { getMusicLink } from "@/lib/music-links";
+import { FavoriteTrackLink } from "@/components/favorite-track-link";
 
 export const dynamic = "force-dynamic";
 
@@ -107,21 +106,7 @@ export default async function UserProfilePage({
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {user.favoriteTracks.map((track, i) => (
-                  <a
-                    key={i}
-                    href={getMusicLink(track)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-lg bg-background/50 hover:bg-background transition-colors border border-transparent hover:border-border"
-                  >
-                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-primary/20 to-primary/5">
-                      <TrackImage src={track.image} alt={track.name} fill sizes="40px" />
-                    </div>
-                    <div className="min-w-0 overflow-hidden">
-                      <p className="truncate text-sm font-medium">{track.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{track.artist}</p>
-                    </div>
-                  </a>
+                  <FavoriteTrackLink key={i} track={track} />
                 ))}
               </div>
             </div>
