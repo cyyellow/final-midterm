@@ -1,8 +1,7 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "last-fm-app/.next",
+  "outputDirectory": ".next",
   "installCommand": "npm install",
-  "framework": "nextjs",
-  "rootDirectory": "last-fm-app"
+  "framework": "nextjs"
 }
 
