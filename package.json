@@ -4,6 +4,7 @@
     "last-fm-app"
   ],
   "dependencies": {
-    "@radix-ui/react-dropdown-menu": "^2.1.16"
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "next": "14.2.13"
   }
 }
