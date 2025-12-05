@@ -80,9 +80,14 @@ export function RightSidebarContent({
   const friendStatusPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [canEditCurrentPlaylist, setCanEditCurrentPlaylist] = useState(false);
 
-  // Poll for friend status updates every 10 seconds
+  // Set up WebSocket subscription for friend status updates
+  const { data: session } = useSession();
+  
   useEffect(() => {
-    const fetchFriendStatuses = async () => {
+    if (!session?.user?.id) return;
+
+    // Fetch initial friend statuses
+    const fetchInitialStatuses = async () => {
       try {
         const res = await fetch("/api/friends/status");
         if (res.ok) {
@@ -92,23 +97,112 @@ export function RightSidebarContent({
           }
         }
       } catch (error) {
-        // Silently fail - don't spam console with errors
         console.error("Failed to fetch friend statuses:", error);
       }
     };
 
-    // Fetch immediately on mount
-    fetchFriendStatuses();
+    fetchInitialStatuses();
 
-    // Set up polling every 30 seconds
-    friendStatusPollingIntervalRef.current = setInterval(fetchFriendStatuses, 30000);
+    // Set up Pusher subscription for real-time updates
+    let pusherUnsubscribe: (() => void) | null = null;
+
+    const setupPusher = async () => {
+      const { getPusherClient } = await import("@/lib/pusher-client");
+      const pusher = getPusherClient();
+
+      if (pusher) {
+        const channelName = `user-${session.user.id}`;
+        const channel = pusher.subscribe(channelName);
+
+        channel.bind("friend-status-update", (data: any) => {
+          setFriendStatuses((prevStatuses) => {
+            // Update the status for the specific friend
+            const updated = prevStatuses.map((status) =>
+              status.id === data.userId
+                ? {
+                    ...status,
+                    trackName: data.trackName,
+                    artistName: data.artistName,
+                    isListening: data.isListening,
+                  }
+                : status
+            );
+
+            // If friend is not in the list, add them (shouldn't happen, but handle it)
+            if (!updated.find((s) => s.id === data.userId)) {
+              updated.push({
+                id: data.userId,
+                username: data.username,
+                displayName: data.displayName,
+                avatarUrl: data.avatarUrl,
+                trackName: data.trackName,
+                artistName: data.artistName,
+                isListening: data.isListening,
+              });
+            }
+
+            return updated;
+          });
+        });
+
+        pusherUnsubscribe = () => {
+          pusher.unsubscribe(channelName);
+        };
+      } else {
+        // Fallback to polling if Pusher is not available
+        friendStatusPollingIntervalRef.current = setInterval(async () => {
+          try {
+            const res = await fetch("/api/friends/status");
+            if (res.ok) {
+              const data = await res.json();
+              if (data.statuses) {
+                setFriendStatuses(data.statuses);
+              }
+            }
+          } catch (error) {
+            console.error("Failed to fetch friend statuses:", error);
+          }
+        }, 30000);
+      }
+    };
+
+    setupPusher();
+
+    // Always set up periodic refresh as backup (every 2 minutes)
+    // This ensures statuses update even if WebSocket misses events or after being idle
+    friendStatusPollingIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch("/api/friends/status");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.statuses) {
+            setFriendStatuses(data.statuses);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch friend statuses:", error);
+      }
+    }, 120000); // 2 minutes
+
+    // Refresh when page becomes visible again
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchInitialStatuses();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      if (pusherUnsubscribe) {
+        pusherUnsubscribe();
+      }
       if (friendStatusPollingIntervalRef.current) {
         clearInterval(friendStatusPollingIntervalRef.current);
       }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [session?.user?.id]);
 
   const playlistMatch = pathname.match(/^\/playlists\/([^\/\?]+)/);
   const currentPlaylistId = playlistMatch?.[1] || null;
@@ -255,6 +349,16 @@ export function RightSidebarContent({
           if (!result.isNowPlaying && pollingIntervalRef.current && isMounted) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
+          }
+
+          // Broadcast status update to friends via Pusher
+          if (isMounted) {
+            try {
+              await fetch("/api/friends/status/broadcast", { method: "POST" });
+            } catch (error) {
+              // Silently fail - Pusher might not be configured
+              console.error("Failed to broadcast status:", error);
+            }
           }
         }, 30000);
       }
