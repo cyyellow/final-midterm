@@ -3,6 +3,11 @@
   "workspaces": [
     "last-fm-app"
   ],
+  "scripts": {
+    "build": "npm run build --workspace=last-fm-app",
+    "dev": "npm run dev --workspace=last-fm-app",
+    "start": "npm run start --workspace=last-fm-app"
+  },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "next": "14.2.13"
