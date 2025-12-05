@@ -27,6 +27,7 @@ export interface Post {
   thoughts: string;
   createdAt: Date;
   likes?: number;
+  likedBy?: string[];
   visibility?: "public" | "friends" | "private";
   comments?: Comment[];
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { getPostById, updateComment, deleteComment } from "@/lib/posts";
+import { pusherServer } from "@/lib/pusher";
 import { z } from "zod";
 
 const updateCommentSchema = z.object({
@@ -31,6 +32,15 @@ export async function PUT(
 
     if (!comment) {
       return NextResponse.json({ error: "Comment not found or unauthorized" }, { status: 404 });
+    }
+
+    // Broadcast comment update via Pusher
+    if (pusherServer) {
+      try {
+        await pusherServer.trigger(`post-${id}`, "comment-updated", comment);
+      } catch (error) {
+        console.error("Failed to broadcast comment update:", error);
+      }
     }
 
     return NextResponse.json({ comment });
@@ -66,6 +76,15 @@ export async function DELETE(
 
     if (!success) {
       return NextResponse.json({ error: "Comment not found or unauthorized" }, { status: 404 });
+    }
+
+    // Broadcast comment deletion via Pusher
+    if (pusherServer) {
+      try {
+        await pusherServer.trigger(`post-${id}`, "comment-deleted", { commentId });
+      } catch (error) {
+        console.error("Failed to broadcast comment deletion:", error);
+      }
     }
 
     return NextResponse.json({ success: true });

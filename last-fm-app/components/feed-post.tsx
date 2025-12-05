@@ -90,6 +90,75 @@ export function FeedPost({ post }: FeedPostProps) {
     }
   }, [showComments, commentsLoaded, post._id]);
 
+  // Set up Pusher subscription for real-time like and comment updates
+  useEffect(() => {
+    let pusherUnsubscribe: (() => void) | null = null;
+
+    const setupPusher = async () => {
+      const { getPusherClient } = await import("@/lib/pusher-client");
+      const pusher = getPusherClient();
+
+      if (pusher) {
+        const channelName = `post-${post._id}`;
+        const channel = pusher.subscribe(channelName);
+
+        // Listen for like updates
+        channel.bind("like-update", (data: any) => {
+          if (data.postId === post._id) {
+            setLikes(data.likes);
+            if (data.userId === session?.user?.id) {
+              setIsLiked(data.isLiked);
+            } else {
+              // Update likedBy state if needed
+              setCurrentPost((prev) => ({
+                ...prev,
+                likes: data.likes,
+                likedBy: data.isLiked
+                  ? [...(prev.likedBy || []), data.userId]
+                  : (prev.likedBy || []).filter((id: string) => id !== data.userId),
+              }));
+            }
+          }
+        });
+
+        // Listen for new comments
+        channel.bind("new-comment", (comment: Comment) => {
+          setComments((prev) => {
+            // Avoid duplicates
+            if (prev.find((c) => c._id === comment._id)) {
+              return prev;
+            }
+            return [...prev, comment];
+          });
+        });
+
+        // Listen for comment updates
+        channel.bind("comment-updated", (comment: Comment) => {
+          setComments((prev) =>
+            prev.map((c) => (c._id === comment._id ? comment : c))
+          );
+        });
+
+        // Listen for comment deletions
+        channel.bind("comment-deleted", (data: { commentId: string }) => {
+          setComments((prev) => prev.filter((c) => c._id !== data.commentId));
+        });
+
+        pusherUnsubscribe = () => {
+          pusher.unsubscribe(channelName);
+        };
+      }
+    };
+
+    setupPusher();
+
+    return () => {
+      if (pusherUnsubscribe) {
+        pusherUnsubscribe();
+      }
+    };
+  }, [post._id, session?.user?.id]);
+
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentInput.trim() || isSubmittingComment) return;

@@ -164,16 +164,6 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
   const client = await clientPromise;
   const db = client.db(process.env.MONGODB_DB);
 
-  // If viewing own profile, show all posts including private ones
-  if (currentUserId === userId) {
-    const query: any = { userId };
-  const posts = await db
-    .collection("posts")
-    .find(query)
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .toArray();
-
   // Get displayName from users collection if not in post
   const usersCollection = db.collection("users");
   let userDisplayName: string | null = null;
@@ -191,34 +181,44 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
     userDisplayName = user?.displayName || null;
   }
 
-  // Process posts and update playlistImage if needed
-  const processedPosts = await Promise.all(
-    posts.map(async (post) => {
-      if (post.playlistId && !post.playlistImage) {
-        try {
-          const playlist = await getPlaylistByIdPublic(post.playlistId);
-          if (playlist && playlist.tracks && playlist.tracks.length > 0) {
-            const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
-            if (trackWithImage?.image) {
-              post.playlistImage = trackWithImage.image;
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching playlist for post:", error);
-        }
-      }
-      
-      return {
-        ...post,
-        displayName: post.displayName || userDisplayName || undefined,
-        _id: post._id.toString(),
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
-      } as Post;
-    })
-  );
+  // If viewing own profile, show all posts including private ones
+  if (currentUserId === userId) {
+    const query: any = { userId };
+    const posts = await db
+      .collection("posts")
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray();
 
-  return processedPosts;
-}
+    // Process posts and update playlistImage if needed
+    const processedPosts = await Promise.all(
+      posts.map(async (post) => {
+        if (post.playlistId && !post.playlistImage) {
+          try {
+            const playlist = await getPlaylistByIdPublic(post.playlistId);
+            if (playlist && playlist.tracks && playlist.tracks.length > 0) {
+              const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
+              if (trackWithImage?.image) {
+                post.playlistImage = trackWithImage.image;
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching playlist for post:", error);
+          }
+        }
+        
+        return {
+          ...post,
+          displayName: post.displayName || userDisplayName || undefined,
+          _id: post._id.toString(),
+          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+        } as Post;
+      })
+    );
+
+    return processedPosts;
+  }
 
   // If viewing someone else's profile, check if they are friends
   let isFriend = false;
@@ -361,6 +361,53 @@ export async function deletePost(postId: string): Promise<void> {
     db.collection("posts").deleteOne({ _id: new ObjectId(postId) }),
     db.collection("comments").deleteMany({ postId }),
   ]);
+}
+
+export async function togglePostLike(postId: string, userId: string): Promise<{ likes: number; isLiked: boolean }> {
+  const client = await clientPromise;
+  const db = client.db(process.env.MONGODB_DB);
+
+  if (!ObjectId.isValid(postId)) {
+    throw new Error("Invalid post ID");
+  }
+
+  const post = await db.collection("posts").findOne({ _id: new ObjectId(postId) });
+
+  if (!post) {
+    throw new Error("Post not found");
+  }
+
+  // Initialize likedBy array if it doesn't exist
+  const likedBy = post.likedBy || [];
+  const isLiked = likedBy.includes(userId);
+
+  let newLikes: number;
+  let newLikedBy: string[];
+
+  if (isLiked) {
+    // Unlike: remove user from likedBy array
+    newLikedBy = likedBy.filter((id: string) => id !== userId);
+    newLikes = Math.max(0, (post.likes || 0) - 1);
+  } else {
+    // Like: add user to likedBy array
+    newLikedBy = [...likedBy, userId];
+    newLikes = (post.likes || 0) + 1;
+  }
+
+  await db.collection("posts").updateOne(
+    { _id: new ObjectId(postId) },
+    {
+      $set: {
+        likes: newLikes,
+        likedBy: newLikedBy,
+      },
+    }
+  );
+
+  return {
+    likes: newLikes,
+    isLiked: !isLiked,
+  };
 }
 
 export async function addComment(

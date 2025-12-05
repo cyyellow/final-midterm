@@ -144,10 +144,10 @@ export function PostDetailDialog({ post, open, onOpenChange }: PostDetailDialogP
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarImage src={currentPost.userImage} />
-                      <AvatarFallback>{currentPost.username[0]?.toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{(currentPost.displayName || currentPost.username)[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">{currentPost.username}</p>
+                      <p className="font-semibold">{currentPost.displayName || currentPost.username}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(currentPost.createdAt).toLocaleDateString("en-US", {
                           month: "long",

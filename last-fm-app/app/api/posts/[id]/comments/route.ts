@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { getPostById, addComment, getComments } from "@/lib/posts";
+import { pusherServer } from "@/lib/pusher";
 import { z } from "zod";
 
 const createCommentSchema = z.object({
@@ -51,6 +52,15 @@ export async function POST(
       session.user.image,
       parsed.content
     );
+
+    // Broadcast comment via Pusher
+    if (pusherServer) {
+      try {
+        await pusherServer.trigger(`post-${id}`, "new-comment", comment);
+      } catch (error) {
+        console.error("Failed to broadcast comment:", error);
+      }
+    }
 
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {
