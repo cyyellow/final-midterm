@@ -49,6 +49,7 @@ export function FeedPost({ post }: FeedPostProps) {
   const [thoughts, setThoughts] = useState(post.thoughts || "");
   const [visibility, setVisibility] = useState<"public" | "friends" | "private">(post.visibility ?? "friends");
   const [commentsLoaded, setCommentsLoaded] = useState(!!post.comments);
+  const [commentCount, setCommentCount] = useState<number>(post.commentCount || 0);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState("");
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
@@ -78,6 +79,7 @@ export function FeedPost({ post }: FeedPostProps) {
         if (res.ok) {
           const data = await res.json();
           setComments(data.comments || []);
+          setCommentCount(data.comments?.length || 0);
           setCommentsLoaded(true);
         }
       } catch (error) {
@@ -128,7 +130,10 @@ export function FeedPost({ post }: FeedPostProps) {
             if (prev.find((c) => c._id === comment._id)) {
               return prev;
             }
-            return [...prev, comment];
+            const newComments = [...prev, comment];
+            // Update count based on actual comments array length
+            setCommentCount(newComments.length);
+            return newComments;
           });
         });
 
@@ -141,7 +146,12 @@ export function FeedPost({ post }: FeedPostProps) {
 
         // Listen for comment deletions
         channel.bind("comment-deleted", (data: { commentId: string }) => {
-          setComments((prev) => prev.filter((c) => c._id !== data.commentId));
+          setComments((prev) => {
+            const newComments = prev.filter((c) => c._id !== data.commentId);
+            // Update count based on actual comments array length
+            setCommentCount(newComments.length);
+            return newComments;
+          });
         });
 
         pusherUnsubscribe = () => {
@@ -173,9 +183,13 @@ export function FeedPost({ post }: FeedPostProps) {
 
       if (res.ok) {
         const data = await res.json();
-        setComments([...comments, data]);
+        const newComments = [...comments, data];
+        setComments(newComments);
         setCommentInput("");
         setCommentsLoaded(true); // Mark as loaded after adding comment
+        // Update count based on actual comments array length
+        // Note: Pusher event will also update this, but we update immediately for better UX
+        setCommentCount(newComments.length);
         toast({ title: "Comment added" });
       } else {
         const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
@@ -335,7 +349,11 @@ export function FeedPost({ post }: FeedPostProps) {
       });
 
       if (res.ok) {
-        setComments(comments.filter(c => c._id !== commentId));
+        const newComments = comments.filter(c => c._id !== commentId);
+        setComments(newComments);
+        // Update count based on actual comments array length
+        // Note: Pusher event will also update this, but we update immediately for better UX
+        setCommentCount(newComments.length);
         toast({ title: "Comment deleted" });
       } else {
         toast({
@@ -530,8 +548,8 @@ export function FeedPost({ post }: FeedPostProps) {
             onClick={() => setShowComments(!showComments)}
           >
             <MessageSquare className="h-4 w-4" />
-            {comments.length > 0 && (
-              <span className="text-xs">{comments.length}</span>
+            {commentCount > 0 && (
+              <span className="text-xs">{commentCount}</span>
             )}
           </Button>
         </div>

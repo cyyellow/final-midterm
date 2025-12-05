@@ -30,6 +30,7 @@ export interface Post {
   likedBy?: string[];
   visibility?: "public" | "friends" | "private";
   comments?: Comment[];
+  commentCount?: number;
 }
 
 export interface CreatePostInput {

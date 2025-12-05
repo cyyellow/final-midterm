@@ -147,17 +147,62 @@ export async function getPosts(limit = 100, currentUserId?: string, filter?: "fr
     }
   });
 
-  return posts.map((post) => {
-    // If post doesn't have displayName, try to get it from the users map
-    const displayName = post.displayName || userDisplayNameMap.get(post.userId) || undefined;
-    
-    return {
-      ...post,
-      displayName,
-      _id: post._id.toString(),
-      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
-    };
-  }) as Post[];
+  // Get comment counts for all posts
+  const postIds = posts.map((p) => p._id.toString());
+  const commentCounts = await db
+    .collection("comments")
+    .aggregate([
+      { $match: { postId: { $in: postIds } } },
+      { $group: { _id: "$postId", count: { $sum: 1 } } },
+    ])
+    .toArray();
+  
+  const commentCountMap = new Map<string, number>();
+  commentCounts.forEach((item) => {
+    commentCountMap.set(item._id, item.count);
+  });
+
+  // Process posts to update playlist data (image and track count)
+  const processedPosts = await Promise.all(
+    posts.map(async (post) => {
+      let updatedPost = { ...post };
+      
+      // If post has playlistId, fetch current playlist data
+      if (post.playlistId) {
+        try {
+          const playlist = await getPlaylistByIdPublic(post.playlistId);
+          if (playlist) {
+            // Update track count from current playlist
+            updatedPost.playlistTrackCount = playlist.tracks?.length || 0;
+            
+            // Update image if missing or empty
+            if (!post.playlistImage && playlist.tracks && playlist.tracks.length > 0) {
+              const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
+              if (trackWithImage?.image) {
+                updatedPost.playlistImage = trackWithImage.image;
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching playlist for post:", error);
+        }
+      }
+      
+      // If post doesn't have displayName, try to get it from the users map
+      const displayName = updatedPost.displayName || userDisplayNameMap.get(updatedPost.userId) || undefined;
+      const commentCount = commentCountMap.get(updatedPost._id.toString()) || 0;
+      
+      return {
+        ...updatedPost,
+        displayName,
+        commentCount,
+        _id: updatedPost._id.toString(),
+        createdAt: updatedPost.createdAt instanceof Date ? updatedPost.createdAt : new Date(updatedPost.createdAt),
+      };
+    })
+  );
+
+  return processedPosts as Post[];
 }
 
 export async function getUserPosts(userId: string, limit = 100, currentUserId?: string): Promise<Post[]> {
@@ -191,16 +236,40 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
       .limit(limit)
       .toArray();
 
-    // Process posts and update playlistImage if needed
+    // Get comment counts for all posts
+    const postIds = posts.map((p) => p._id.toString());
+    const commentCounts = await db
+      .collection("comments")
+      .aggregate([
+        { $match: { postId: { $in: postIds } } },
+        { $group: { _id: "$postId", count: { $sum: 1 } } },
+      ])
+      .toArray();
+    
+    const commentCountMap = new Map<string, number>();
+    commentCounts.forEach((item) => {
+      commentCountMap.set(item._id, item.count);
+    });
+
+    // Process posts and update playlist data (image and track count)
     const processedPosts = await Promise.all(
       posts.map(async (post) => {
-        if (post.playlistId && !post.playlistImage) {
+        let updatedPost = { ...post };
+        
+        // If post has playlistId, fetch current playlist data
+        if (post.playlistId) {
           try {
             const playlist = await getPlaylistByIdPublic(post.playlistId);
-            if (playlist && playlist.tracks && playlist.tracks.length > 0) {
-              const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
-              if (trackWithImage?.image) {
-                post.playlistImage = trackWithImage.image;
+            if (playlist) {
+              // Update track count from current playlist
+              updatedPost.playlistTrackCount = playlist.tracks?.length || 0;
+              
+              // Update image if missing or empty
+              if (!post.playlistImage && playlist.tracks && playlist.tracks.length > 0) {
+                const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
+                if (trackWithImage?.image) {
+                  updatedPost.playlistImage = trackWithImage.image;
+                }
               }
             }
           } catch (error) {
@@ -208,11 +277,14 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
           }
         }
         
+        const commentCount = commentCountMap.get(updatedPost._id.toString()) || 0;
+        
         return {
-          ...post,
-          displayName: post.displayName || userDisplayName || undefined,
-          _id: post._id.toString(),
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+          ...updatedPost,
+          displayName: updatedPost.displayName || userDisplayName || undefined,
+          commentCount,
+          _id: updatedPost._id.toString(),
+          createdAt: updatedPost.createdAt instanceof Date ? updatedPost.createdAt : new Date(updatedPost.createdAt),
         } as Post;
       })
     );
@@ -262,31 +334,57 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
     .limit(limit)
     .toArray();
 
-  // Process posts and update playlistImage if needed
+  // Get comment counts for all posts
+  const postIds = posts.map((p) => p._id.toString());
+  const commentCounts = await db
+    .collection("comments")
+    .aggregate([
+      { $match: { postId: { $in: postIds } } },
+      { $group: { _id: "$postId", count: { $sum: 1 } } },
+    ])
+    .toArray();
+  
+  const commentCountMap = new Map<string, number>();
+  commentCounts.forEach((item) => {
+    commentCountMap.set(item._id, item.count);
+  });
+
+  // Process posts and update playlist data (image and track count)
   const processedPosts = await Promise.all(
     posts.map(async (post) => {
-      // If post has playlistId but no playlistImage (or empty), fetch playlist and get first track's image
-      if (post.playlistId && !post.playlistImage) {
+      let updatedPost = { ...post };
+      
+      // If post has playlistId, fetch current playlist data
+      if (post.playlistId) {
         try {
           const playlist = await getPlaylistByIdPublic(post.playlistId);
-          if (playlist && playlist.tracks && playlist.tracks.length > 0) {
-            // Find first track with a non-empty image
-            const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
-            if (trackWithImage?.image) {
-              post.playlistImage = trackWithImage.image;
+          if (playlist) {
+            // Update track count from current playlist
+            updatedPost.playlistTrackCount = playlist.tracks?.length || 0;
+            
+            // Update image if missing or empty
+            if (!post.playlistImage && playlist.tracks && playlist.tracks.length > 0) {
+              // Find first track with a non-empty image
+              const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
+              if (trackWithImage?.image) {
+                updatedPost.playlistImage = trackWithImage.image;
+              }
             }
           }
         } catch (error) {
-          // If playlist fetch fails, just continue without updating image
+          // If playlist fetch fails, just continue without updating
           console.error("Error fetching playlist for post:", error);
         }
       }
       
+      const commentCount = commentCountMap.get(updatedPost._id.toString()) || 0;
+      
       return {
-        ...post,
-        displayName: post.displayName || userDisplayName || undefined,
-        _id: post._id.toString(),
-        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+        ...updatedPost,
+        displayName: updatedPost.displayName || userDisplayName || undefined,
+        commentCount,
+        _id: updatedPost._id.toString(),
+        createdAt: updatedPost.createdAt instanceof Date ? updatedPost.createdAt : new Date(updatedPost.createdAt),
       } as Post;
     })
   );
