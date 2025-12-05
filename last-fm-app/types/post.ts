@@ -11,6 +11,7 @@ export interface Post {
   _id: string;
   userId: string;
   username: string;
+  displayName?: string;
   userImage?: string;
   track?: {
     name: string;

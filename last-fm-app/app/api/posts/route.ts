@@ -71,6 +71,7 @@ export async function POST(request: Request) {
     const post = await createPost(
       session.user.id,
       session.user.username || "Anonymous",
+      session.user.displayName || null,
       session.user.image,
       { track, playlistId, playlistName, playlistImage, playlistTrackCount, thoughts, visibility }
     );

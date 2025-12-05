@@ -6,6 +6,7 @@ import { getPlaylistByIdPublic } from "./playlist";
 export async function createPost(
   userId: string,
   username: string,
+  displayName: string | null,
   userImage: string | null,
   input: CreatePostInput
 ): Promise<Post> {
@@ -15,6 +16,7 @@ export async function createPost(
   const post = {
     userId,
     username,
+    displayName: displayName || undefined,
     userImage: userImage || undefined,
     track: input.track,
     playlistId: input.playlistId,
@@ -115,11 +117,47 @@ export async function getPosts(limit = 100, currentUserId?: string, filter?: "fr
     .limit(limit)
     .toArray();
 
-  return posts.map((post) => ({
-    ...post,
-    _id: post._id.toString(),
-    createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
-  })) as Post[];
+  // Get unique user IDs to fetch display names
+  const userIds = [...new Set(posts.map(p => p.userId).filter(Boolean))];
+  const usersCollection = db.collection("users");
+  const userObjectIds = userIds
+    .filter((id) => ObjectId.isValid(id))
+    .map((id) => new ObjectId(id));
+  
+  const users = await usersCollection
+    .find({
+      $or: [
+        { _id: { $in: userObjectIds } },
+        { id: { $in: userIds } },
+      ],
+    })
+    .project({
+      _id: 1,
+      id: 1,
+      displayName: 1,
+    })
+    .toArray();
+
+  // Create a map of userId to displayName
+  const userDisplayNameMap = new Map<string, string | null>();
+  users.forEach((user) => {
+    const userId = user._id?.toString() ?? (user as any).id;
+    if (userId) {
+      userDisplayNameMap.set(userId, user.displayName || null);
+    }
+  });
+
+  return posts.map((post) => {
+    // If post doesn't have displayName, try to get it from the users map
+    const displayName = post.displayName || userDisplayNameMap.get(post.userId) || undefined;
+    
+    return {
+      ...post,
+      displayName,
+      _id: post._id.toString(),
+      createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+    };
+  }) as Post[];
 }
 
 export async function getUserPosts(userId: string, limit = 100, currentUserId?: string): Promise<Post[]> {
@@ -129,40 +167,58 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
   // If viewing own profile, show all posts including private ones
   if (currentUserId === userId) {
     const query: any = { userId };
-    const posts = await db
-      .collection("posts")
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .toArray();
+  const posts = await db
+    .collection("posts")
+    .find(query)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
 
-    // Process posts and update playlistImage if needed
-    const processedPosts = await Promise.all(
-      posts.map(async (post) => {
-        if (post.playlistId && !post.playlistImage) {
-          try {
-            const playlist = await getPlaylistByIdPublic(post.playlistId);
-            if (playlist && playlist.tracks && playlist.tracks.length > 0) {
-              const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
-              if (trackWithImage?.image) {
-                post.playlistImage = trackWithImage.image;
-              }
-            }
-          } catch (error) {
-            console.error("Error fetching playlist for post:", error);
-          }
-        }
-        
-        return {
-          ...post,
-          _id: post._id.toString(),
-          createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
-        } as Post;
-      })
+  // Get displayName from users collection if not in post
+  const usersCollection = db.collection("users");
+  let userDisplayName: string | null = null;
+  if (ObjectId.isValid(userId)) {
+    const user = await usersCollection.findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { displayName: 1 } }
     );
-
-    return processedPosts;
+    userDisplayName = user?.displayName || null;
+  } else {
+    const user = await usersCollection.findOne(
+      { id: userId },
+      { projection: { displayName: 1 } }
+    );
+    userDisplayName = user?.displayName || null;
   }
+
+  // Process posts and update playlistImage if needed
+  const processedPosts = await Promise.all(
+    posts.map(async (post) => {
+      if (post.playlistId && !post.playlistImage) {
+        try {
+          const playlist = await getPlaylistByIdPublic(post.playlistId);
+          if (playlist && playlist.tracks && playlist.tracks.length > 0) {
+            const trackWithImage = playlist.tracks.find(track => track.image && track.image.trim() !== "");
+            if (trackWithImage?.image) {
+              post.playlistImage = trackWithImage.image;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching playlist for post:", error);
+        }
+      }
+      
+      return {
+        ...post,
+        displayName: post.displayName || userDisplayName || undefined,
+        _id: post._id.toString(),
+        createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
+      } as Post;
+    })
+  );
+
+  return processedPosts;
+}
 
   // If viewing someone else's profile, check if they are friends
   let isFriend = false;
@@ -228,6 +284,7 @@ export async function getUserPosts(userId: string, limit = 100, currentUserId?: 
       
       return {
         ...post,
+        displayName: post.displayName || userDisplayName || undefined,
         _id: post._id.toString(),
         createdAt: post.createdAt instanceof Date ? post.createdAt : new Date(post.createdAt),
       } as Post;

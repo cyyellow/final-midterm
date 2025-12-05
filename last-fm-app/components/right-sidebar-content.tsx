@@ -62,7 +62,7 @@ function getRelativeTime(uts?: string) {
 export function RightSidebarContent({
   nowPlaying: initialNowPlaying,
   recentTracks: initialRecentTracks,
-  friendStatuses,
+  friendStatuses: initialFriendStatuses,
   playlists,
   username,
   friends = [],
@@ -75,8 +75,40 @@ export function RightSidebarContent({
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<LastfmTrack | null>(initialNowPlaying);
   const [recentTracks, setRecentTracks] = useState<LastfmTrack[]>(initialRecentTracks);
+  const [friendStatuses, setFriendStatuses] = useState<FriendStatus[]>(initialFriendStatuses);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const friendStatusPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [canEditCurrentPlaylist, setCanEditCurrentPlaylist] = useState(false);
+
+  // Poll for friend status updates every 10 seconds
+  useEffect(() => {
+    const fetchFriendStatuses = async () => {
+      try {
+        const res = await fetch("/api/friends/status");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.statuses) {
+            setFriendStatuses(data.statuses);
+          }
+        }
+      } catch (error) {
+        // Silently fail - don't spam console with errors
+        console.error("Failed to fetch friend statuses:", error);
+      }
+    };
+
+    // Fetch immediately on mount
+    fetchFriendStatuses();
+
+    // Set up polling every 30 seconds
+    friendStatusPollingIntervalRef.current = setInterval(fetchFriendStatuses, 30000);
+
+    return () => {
+      if (friendStatusPollingIntervalRef.current) {
+        clearInterval(friendStatusPollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   const playlistMatch = pathname.match(/^\/playlists\/([^\/\?]+)/);
   const currentPlaylistId = playlistMatch?.[1] || null;

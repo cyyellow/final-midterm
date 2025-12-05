@@ -320,12 +320,12 @@ export function FeedPost({ post }: FeedPostProps) {
       <div className="mb-3 flex items-start gap-3">
         <Avatar className="h-10 w-10">
             <AvatarImage src={currentPost.userImage} />
-            <AvatarFallback>{currentPost.username[0].toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{(currentPost.displayName || currentPost.username)[0].toUpperCase()}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
             <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-                <span className="font-semibold">{currentPost.username}</span>
+                <span className="font-semibold">{currentPost.displayName || currentPost.username}</span>
             <span className="text-xs text-muted-foreground">
                   {new Date(currentPost.createdAt).toLocaleDateString()} {new Date(currentPost.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
             </span>
